@@ -19,7 +19,7 @@ struct EmbedContent {
 #[serde(rename_all = "camelCase")]
 pub struct EmbedRequest {
     pub model: String,
-    pub content: EmbedContent,
+     content: EmbedContent,
 }
 
 #[derive(Debug, Deserialize)]

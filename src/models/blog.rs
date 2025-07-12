@@ -8,4 +8,16 @@ pub struct Blog{
     pub publisher:String,
     pub content: String,
 
-}                               
+}             
+impl Blog {
+    pub fn to_embedding_text(&self) -> String {
+        // Prioritize semantic structure
+        format!(
+            "Title: {}\nAuthor: {}\nDate: {}\nContent: {}",
+            self.title,
+            self.author,
+            self.date,
+            self.content
+        )
+    }
+}                  
