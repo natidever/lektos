@@ -1,4 +1,5 @@
 
+
 use warc::WarcHeader;
 use warc::WarcReader;
 use std::fs;
@@ -7,11 +8,17 @@ use std::io;
 use crate::extractors::pipeline::MetadataPipeline;
 use crate::models::blog::Blog;
 use crate::models::metadata;
+use crate::utils::embed::generate_embedding;
 use crate::utils::html_utils::BlogProcessor;
 
 mod utils;
 mod extractors;
 mod models;
+
+
+
+// Import Embedding and Embeddings from the 'embed' module
+use anyhow::Result;
 
 
 
@@ -138,55 +145,107 @@ mod models;
 
 // }
 
+// #[tokio::main]
+// async fn main (){
 
-fn main (){
-    let file_html= fs::read_to_string("blog_1.html").expect("Failed to read file");
+  
 
-      let html = r#"
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta property="og:title" content="Rust Memory Safety">
-        <meta property="og:article:author" content="Alice Rust">
-        <meta property="og:article:published_time" content="2023-09-20">
-    </head>
-    <body></body>
-    </html>
-    "#;
+//     let file_html= fs::read_to_string("blog_1.html").expect("Failed to read file");
 
-    let pipeline = MetadataPipeline::new();
-    let metadata = pipeline.run(file_html.as_str());
-    let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_str());
+//       let html = r#"
+//     <!DOCTYPE html>
+//     <html>
+//     <head>
+//         <meta property="og:title" content="Rust Memory Safety">
+//         <meta property="og:article:author" content="Alice Rust">
+//         <meta property="og:article:published_time" content="2023-09-20">
+//     </head>
+//     <body></body>
+//     </html>
+//     "#;
 
-    let mut blog = Blog{
-    title: metadata.title.map(|f| f.value).unwrap_or("Untitled".into()),
-    author: metadata.author.map(|f| f.value).unwrap_or("Unknown".into()),
-    description: metadata.description.map(|f| f.value).unwrap_or_default(),
-    date: metadata.date.map(|f| f.value).unwrap_or("".into()),
-    publisher: metadata.publisher.map(|f| f.value).unwrap_or_default(),
-    content: blog_content,
+//     // let pipeline = MetadataPipeline::new();
+//     // let metadata = pipeline.run(file_html.as_str());
+//     // let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_str());
 
-    };
+//     // let mut blog = Blog{
+//     // title: metadata.title.map(|f| f.value).unwrap_or("Untitled".into()),
+//     // author: metadata.author.map(|f| f.value).unwrap_or("Unknown".into()),
+//     // description: metadata.description.map(|f| f.value).unwrap_or_default(),
+//     // date: metadata.date.map(|f| f.value).unwrap_or("".into()),
+//     // publisher: metadata.publisher.map(|f| f.value).unwrap_or_default(),
+//     // content: blog_content,
+
+//     // };
    
-        
+
 
 
        
     
-    //  println!("Extracted Metadata:");
-    // if let Some(title) = &metadata.title {
-    // }
-    // if let Some(author) = &metadata.author {
-    //     println!("- Author: {} (source: {})", author.value, author.source);
-    // }
-    // if let Some(date) = &metadata.date {
-    //     println!("- Date: {} (source: {})", date.value, date.source);
-    // }
-    // if let Some(publisher) = &metadata.publisher {
-    //     println!("- Publisher: {} (source: {})", publisher.value, publisher.source);
-    // }
+//     //  println!("Extracted Metadata:");
+//     // if let Some(title) = &metadata.title {
+//     // }
+//     // if let Some(author) = &metadata.author {
+//     //     println!("- Author: {} (source: {})", author.value, author.source);
+//     // }
+//     // if let Some(date) = &metadata.date {
+//     //     println!("- Date: {} (source: {})", date.value, date.source);
+//     // }
+//     // if let Some(publisher) = &metadata.publisher {
+//     //     println!("- Publisher: {} (source: {})", publisher.value, publisher.source);
+//     // }
     
   
+// }
+
+
+
+// src/main.rs
+
+ // Declare the 'embedding' module
+
+use tokio;          // For the async runtime
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    
+    let api_key = "AIzaSyDnuaXPCGi0Dk3-zHKo_474ZfkqAa7O2Pk";
+
+   
+    let embedding_model = "models/embedding-001"; 
+
+    println!("Application starting...");
+    println!("Using API Key (first 10 chars): {}...", &api_key[0..10]);
+    println!("Using Embedding Model: {}", embedding_model);
+
+
+    let text1 = "The quick brown fox jumps over the lazy dog.".to_string();
+    println!("\n--- Embedding Example 1 ---");
+    match generate_embedding(text1, api_key, embedding_model).await {
+        Ok(embedding) => {
+            println!("Main: Successfully obtained embedding with dimensionality: {}", embedding.len());
+            println!("Main: First 5 values: {:?}", &embedding[0..5]);
+        }
+        Err(e) => {
+            eprintln!("Main: Failed to get embedding for example 1: {}", e);
+        }
+    }
+
+    let text2 = "Rust is a powerful and safe programming language.".to_string();
+    println!("\n--- Embedding Example 2 ---");
+    match generate_embedding(text2, api_key, embedding_model).await {
+        Ok(embedding) => {
+            println!("Main: Successfully obtained embedding with dimensionality: {}", embedding.len());
+            println!("Main: First 5 values: {:?}", &embedding[0..5]);
+        }
+        Err(e) => {
+            eprintln!("Main: Failed to get embedding for example 2: {}", e);
+        }
+    }
+
+    println!("\nApplication finished.");
+    Ok(())
 }
 
 
