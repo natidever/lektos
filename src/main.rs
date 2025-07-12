@@ -210,7 +210,10 @@ use tokio;          // For the async runtime
 #[tokio::main]
 async fn main() -> Result<()> {
     
-    let api_key = "AIzaSyDnuaXPCGi0Dk3-zHKo_474ZfkqAa7O2Pk";
+    let api_key = &std::env::var("GEMINI_API_KEY").expect("nokey");
+    
+
+    println!("DEBUG KEY: {}", api_key);
 
    
     let embedding_model = "models/embedding-001"; 
