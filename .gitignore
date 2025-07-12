@@ -1,0 +1,57 @@
+resource.warc.gz
+
+*.html 
+# Compiled files and target directory
+/target/
+
+# Build artifacts
+**/*.rlib
+**/*.rmeta
+
+# Executables and binaries
+**/*.exe
+**/*.dll
+**/*.so
+**/*.dylib
+
+# Backup and temporary files
+**/*~
+**/*.swp
+**/*.tmp
+**/*.bak
+*.log
+
+# IDE/editor specific
+# VS Code
+.vscode/
+# JetBrains (CLion, IntelliJ Rust)
+.idea/
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Rust/Cargo specific
+Cargo.lock  # (optional – include for binaries, ignore for libraries)
+.cargo/
+
+# Dependency builds
+/target/
+**/target/
+
+# MacOS
+.DS_Store
+
+# Node/npm artifacts if using frontends
+node_modules/
+dist/
+
+# Environment variables or secrets
+.env
+.env.*
+
+# Coverage or test outputs
+coverage/
+tarpaulin-report.html
+
+# Misc
+*.crate
