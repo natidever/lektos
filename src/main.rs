@@ -1,4 +1,5 @@
 
+
 use warc::WarcHeader;
 use warc::WarcReader;
 use std::fs;
@@ -7,11 +8,17 @@ use std::io;
 use crate::extractors::pipeline::MetadataPipeline;
 use crate::models::blog::Blog;
 use crate::models::metadata;
+use crate::utils::embed::generate_embedding;
 use crate::utils::html_utils::BlogProcessor;
 
 mod utils;
 mod extractors;
 mod models;
+
+
+
+// Import Embedding and Embeddings from the 'embed' module
+use anyhow::Result;
 
 
 
@@ -138,8 +145,11 @@ mod models;
 
 // }
 
+#[tokio::main]
+async fn main (){
 
-fn main (){
+  
+
     let file_html= fs::read_to_string("blog_1.html").expect("Failed to read file");
 
       let html = r#"
@@ -167,26 +177,76 @@ fn main (){
     content: blog_content,
 
     };
+
+    let embedding_text = blog.to_embedding_text();
    
-        
 
-
-       
+    let api_key = &std::env::var("GEMINI_API_KEY").expect("API KEY NOT FOUND");
     
-    //  println!("Extracted Metadata:");
-    // if let Some(title) = &metadata.title {
-    // }
-    // if let Some(author) = &metadata.author {
-    //     println!("- Author: {} (source: {})", author.value, author.source);
-    // }
-    // if let Some(date) = &metadata.date {
-    //     println!("- Date: {} (source: {})", date.value, date.source);
-    // }
-    // if let Some(publisher) = &metadata.publisher {
-    //     println!("- Publisher: {} (source: {})", publisher.value, publisher.source);
-    // }
+   
+    let embedding_model = "models/embedding-001"; 
+
+ 
+    let text1 = "The quick brown fox jumps over the lazy dog.".to_string();
+
+    match generate_embedding(text1, api_key, embedding_model).await {
+        Ok(embedding) => {
+            println!("Main: Successfully obtained embedding with dimensionality: {}", embedding.len());
+            println!("Main: First 5 values: {:?}", &embedding[0..5]);
+        }
+        Err(e) => {
+            eprintln!("Main: Failed to get embedding for example 1: {}", e);
+        }
+    }
+    
+      
+
+
+
+
+
     
   
 }
+
+
+
+// src/main.rs
+
+ // Declare the 'embedding' module
+
+// use tokio;          // For the async runtime
+
+// #[tokio::main]
+// async fn main() -> Result<()> {
+    
+//     let api_key = &std::env::var("GEMINI_API_KEY").expect("nokey");
+    
+
+//     println!("DEBUG KEY: {}", api_key);
+
+   
+//     let embedding_model = "models/embedding-001"; 
+
+ 
+
+//     let text1 = "The quick brown fox jumps over the lazy dog.".to_string();
+
+  
+//     match generate_embedding(text1, api_key, embedding_model).await {
+//         Ok(embedding) => {
+//             println!("Main: Successfully obtained embedding with dimensionality: {}", embedding.len());
+//             println!("Main: First 5 values: {:?}", &embedding[0..5]);
+//         }
+//         Err(e) => {
+//             eprintln!("Main: Failed to get embedding for example 1: {}", e);
+//         }
+//     }
+
+ 
+
+//     println!("\nApplication finished.");
+//     Ok(())
+// }
 
 
