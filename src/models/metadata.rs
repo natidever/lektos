@@ -4,7 +4,7 @@ use crate::extractors::{ogp::OgpExtractor, schema::SchemaExtractor};
 
 pub trait MetadataExtractor: Send + Sync {
     fn extract(&self, html: &str) -> ExtractionResult;
-    fn priority(&self) -> u8; // Lower = higher priority
+    fn priority(&self) -> u8; 
     fn name(&self) -> &'static str;
 }
 #[derive(Debug,Default)]
