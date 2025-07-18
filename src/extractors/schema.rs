@@ -68,6 +68,9 @@ impl SchemaExtractor {
         let mut result = HashMap::new();
         let object = json.as_object()?;
 
+        // object as Value from serde to give to the find author
+        let object_as_value = Value::Object(object.clone());
+
         // Extract top-level fields
         for (field, target) in SCHEMA_MAPPING {
             if let Some(value) = object.get(field) {
@@ -75,30 +78,26 @@ impl SchemaExtractor {
                     result.insert(target.to_string(), s.to_string());
                 }
             }
+
+
         }
+        println!("Result after mapping: {:?}", result);
 
-        // Special handling for nested author
-        // if let Some(author) = object.get("author") {
-        //     if let Some(author_name) = author.get("name").and_then(Value::as_str) {
-           
-
-        //         println!("Got author name: {}", author_name);
-        //         result.insert("author".to_string(), author_name.to_string());
-        //     }
-        // }
-       if let Some(author)=object.get("author"){
+     
+  
         
 
 
 
-        if let Some(author_name)=get_author(author.clone()){
-        println!("GotAuthorNme: {}", author_name);
+        if let Some(author_name)=get_author(object_as_value){
+            
+    
             result.insert("author".to_string(), author_name);
         }
 
        
           
-       }
+       
 
 
         // Special handling for nested publisher
@@ -107,6 +106,8 @@ impl SchemaExtractor {
                 result.insert("publisher".to_string(), pub_name.to_string());
             }
         }
+
+        println!("result after publisher handling: {:?}", result);
 
         Some(result)
     }
