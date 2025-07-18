@@ -16,6 +16,36 @@ const SCHEMA_MAPPING: [(&str, &str); 5] = [
 pub struct SchemaExtractor;
 
 
+
+fn get_author(object:Value)->Option<String>{
+
+    println!("get_author called :", );
+
+    
+    match object.get("author") {
+
+        Some(Value::Object(map)) => {
+          map.get("name").and_then(Value::as_str).map(|s| s.to_string())
+        }
+
+        Some(Value::Array(map))=>{
+          map.iter().
+          filter_map(|author| author.get("name").
+          and_then(Value::as_str)).next().map(|s| s.to_string())
+
+        }
+
+        Some(Value::String(s)) => Some(s.to_string()),
+        _ => {println!("No author found in object: {:?}", object); None},
+
+        
+    }
+
+   
+   
+}
+
+
 impl SchemaExtractor {
     pub fn new() -> Self {
         SchemaExtractor
@@ -48,11 +78,28 @@ impl SchemaExtractor {
         }
 
         // Special handling for nested author
-        if let Some(author) = object.get("author") {
-            if let Some(author_name) = author.get("name").and_then(Value::as_str) {
-                result.insert("author".to_string(), author_name.to_string());
-            }
+        // if let Some(author) = object.get("author") {
+        //     if let Some(author_name) = author.get("name").and_then(Value::as_str) {
+           
+
+        //         println!("Got author name: {}", author_name);
+        //         result.insert("author".to_string(), author_name.to_string());
+        //     }
+        // }
+       if let Some(author)=object.get("author"){
+        
+
+
+
+        if let Some(author_name)=get_author(author.clone()){
+        println!("GotAuthorNme: {}", author_name);
+            result.insert("author".to_string(), author_name);
         }
+
+       
+          
+       }
+
 
         // Special handling for nested publisher
         if let Some(publisher) = object.get("publisher") {
@@ -126,3 +173,5 @@ impl MetadataExtractor for SchemaExtractor{
         "schema"
     }
 }
+
+

@@ -55,3 +55,12 @@ tarpaulin-report.html
 
 # Misc
 *.crate
+
+.warc.gz
+*.warc.gz
+*.warc
+*.warc.gz.*
+*.warc.gz.*
+*.warc.*
+*.warc.*
+common_crawl_2025-26_warcfiles

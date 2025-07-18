@@ -17,4 +17,5 @@ gemini-rust = "0.4"
 anyhow = "1.0"
 reqwest = "0.12.22"
 rayon = "1.10.0"
+streaming-iterator = "0.1.9"
 
