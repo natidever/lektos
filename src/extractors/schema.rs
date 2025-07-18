@@ -16,6 +16,36 @@ const SCHEMA_MAPPING: [(&str, &str); 5] = [
 pub struct SchemaExtractor;
 
 
+
+fn get_author(object:Value)->Option<String>{
+
+    println!("get_author called :", );
+
+    
+    match object.get("author") {
+
+        Some(Value::Object(map)) => {
+          map.get("name").and_then(Value::as_str).map(|s| s.to_string())
+        }
+
+        Some(Value::Array(map))=>{
+          map.iter().
+          filter_map(|author| author.get("name").
+          and_then(Value::as_str)).next().map(|s| s.to_string())
+
+        }
+
+        Some(Value::String(s)) => Some(s.to_string()),
+        _ => {println!("No author found in object: {:?}", object); None},
+
+        
+    }
+
+   
+   
+}
+
+
 impl SchemaExtractor {
     pub fn new() -> Self {
         SchemaExtractor
@@ -38,6 +68,9 @@ impl SchemaExtractor {
         let mut result = HashMap::new();
         let object = json.as_object()?;
 
+        // object as Value from serde to give to the find author
+        let object_as_value = Value::Object(object.clone());
+
         // Extract top-level fields
         for (field, target) in SCHEMA_MAPPING {
             if let Some(value) = object.get(field) {
@@ -45,14 +78,27 @@ impl SchemaExtractor {
                     result.insert(target.to_string(), s.to_string());
                 }
             }
+
+
+        }
+        println!("Result after mapping: {:?}", result);
+
+     
+  
+        
+
+
+
+        if let Some(author_name)=get_author(object_as_value){
+            
+    
+            result.insert("author".to_string(), author_name);
         }
 
-        // Special handling for nested author
-        if let Some(author) = object.get("author") {
-            if let Some(author_name) = author.get("name").and_then(Value::as_str) {
-                result.insert("author".to_string(), author_name.to_string());
-            }
-        }
+       
+          
+       
+
 
         // Special handling for nested publisher
         if let Some(publisher) = object.get("publisher") {
@@ -60,6 +106,8 @@ impl SchemaExtractor {
                 result.insert("publisher".to_string(), pub_name.to_string());
             }
         }
+
+        println!("result after publisher handling: {:?}", result);
 
         Some(result)
     }
@@ -126,3 +174,5 @@ impl MetadataExtractor for SchemaExtractor{
         "schema"
     }
 }
+
+

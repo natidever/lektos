@@ -20,7 +20,7 @@ impl MetadataPipeline{
     pub fn new()->Self{
         let mut extractors = get_extractors();
 
-        // TODO:I have to make the extractor in priority order
+        
         extractors.sort_by_key(|extractor| extractor.priority());
         MetadataPipeline { extractors }
     }
