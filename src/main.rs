@@ -3,6 +3,7 @@
 // use warc::Record;
 use warc::WarcHeader;
 use warc::WarcReader;
+use std::collections::HashMap;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io;
@@ -33,14 +34,12 @@ use anyhow::Result;
 
 
 
-fn main() -> io::Result<()> {
+// fn main() -> io::Result<()> {
 
-// PSEUDO-CODE - CONCEPTUAL IMPLEMENTATION
+// // PSEUDO-CODE - CONCEPTUAL IMPLEMENTATION
 
-use rayon::prelude::*;
-use std::sync::atomic::{AtomicUsize, Ordering};
-
-
+// use rayon::prelude::*;
+// use std::sync::atomic::{AtomicUsize, Ordering};
 
 
 
@@ -61,141 +60,143 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 
 
+
+
+
+
+    
+
+
+//     println!("Extracting  blogs from WARC file...");
+//     // let warc_name = "src/resources/2025-26.warc";
+//     let warc_name = "src/resources/CC-MAIN-20250612112840-20250612142840-00000.warc.gz";
 
 
     
-
-
-    println!("Extracting  blogs from WARC file...");
-    // let warc_name = "src/resources/2025-26.warc";
-    let warc_name = "src/resources/CC-MAIN-20250612112840-20250612142840-00000.warc.gz";
-
-
     
-    
-    let mut reader = WarcReader::from_path_gzip(warc_name)?; 
+//     let mut reader = WarcReader::from_path_gzip(warc_name)?; 
 
 
-    let mut stream_iter = reader.stream_records();
-// let mut records = Vec::new();
+//     let mut stream_iter = reader.stream_records();
+// // let mut records = Vec::new();
 
-// Use a loop with explicit scoping
-
-
+// // Use a loop with explicit scoping
 
 
-    // let mut strea_iter=reader::stream_recored();
+
+
+//     // let mut strea_iter=reader::stream_recored();
 
   
 
     
-    let mut blog_count = 0;
-    const MAX_BLOGS: usize = 500;
+//     let mut blog_count = 0;
+//     const MAX_BLOGS: usize = 500;
 
-    let mut confirmed_blogs = 0;
+//     let mut confirmed_blogs = 0;
 
 
 
-    while let Some(record_result) = stream_iter.next_item() {
+//     while let Some(record_result) = stream_iter.next_item() {
 
 
       
-        let record = match record_result {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("Error reading record: {}", e);
-                continue;
-            }
-        };
+//         let record = match record_result {
+//             Ok(r) => r,
+//             Err(e) => {
+//                 eprintln!("Error reading record: {}", e);
+//                 continue;
+//             }
+//         };
         
-        // Extract URL
-        let url = record.header(WarcHeader::TargetURI)
-            .map(|s| s.to_string())
-            .unwrap_or_default();
+//         // Extract URL
+//         let url = record.header(WarcHeader::TargetURI)
+//             .map(|s| s.to_string())
+//             .unwrap_or_default();
         
   
-       if !is_blog_url(&url){
-        let mut file = OpenOptions::new()
-        .append(true)  // Open in append mode
-        .create(true)  // Create the file if it doesn't exist
-        .open("rejected_url.html")?; 
-        writeln!(file, "{}", url)?;
+//        if !is_blog_url(&url){
+//         let mut file = OpenOptions::new()
+//         .append(true)  // Open in append mode
+//         .create(true)  // Create the file if it doesn't exist
+//         .open("rejected_url.html")?; 
+//         writeln!(file, "{}", url)?;
 
-            continue;
-        }
-          let mut file = OpenOptions::new()
-        .append(true)  // Open in append mode
-        .create(true)  // Create the file if it doesn't exist
-        .open("accepted_url.html")?; 
-    writeln!(file, "{}", url)?;
+//             continue;
+//         }
+//           let mut file = OpenOptions::new()
+//         .append(true)  // Open in append mode
+//         .create(true)  // Create the file if it doesn't exist
+//         .open("accepted_url.html")?; 
+//     writeln!(file, "{}", url)?;
 
 
         
         
         
-        // Check WARC type is response (contains actual content)
-        if record.header(WarcHeader::WarcType).map(|s| s.to_string()) != Some("response".to_string()) {
-            continue;
-        }
+//         // Check WARC type is response (contains actual content)
+//         if record.header(WarcHeader::WarcType).map(|s| s.to_string()) != Some("response".to_string()) {
+//             continue;
+//         }
         
-        // Process content
-    //     match record.into_buffered() {
-    //         Ok(buffered) => {
-    //             let body = buffered.body();
+//         // Process content
+//     //     match record.into_buffered() {
+//     //         Ok(buffered) => {
+//     //             let body = buffered.body();
 
 
                 
 
                  
                 
-    //             // Extract the actual HTML from the HTTP response
-    //             if let Some(html_start) = find_html_start(body) {
-    //                 let html = &body[html_start..];
-    //                 let html_content = String::from_utf8_lossy(&html);
-    //                 let file_name = format!("sub_sblog_{}.html", blog_count + 1);
-    //                 println!("URL {}",url);
+//     //             // Extract the actual HTML from the HTTP response
+//     //             if let Some(html_start) = find_html_start(body) {
+//     //                 let html = &body[html_start..];
+//     //                 let html_content = String::from_utf8_lossy(&html);
+//     //                 let file_name = format!("sub_sblog_{}.html", blog_count + 1);
+//     //                 println!("URL {}",url);
 
-    //                 // if url.contains(".substack"){
-    //                 // fs::write(file_name, &html).expect("Failed to write HTML preview");
+//     //                 // if url.contains(".substack"){
+//     //                 // fs::write(file_name, &html).expect("Failed to write HTML preview");
 
 
-    //                 // }
+//     //                 // }
 
-    //                 // fs::write(file_name, &html).expect("Failed to write HTML preview");
-    // let pipeline = MetadataPipeline::new();
-    // // reading html from file (test)
-    // // let file_html= fs::read_to_string(html_content.as_ref()).expect("Failed to read file");
-    // let file_html= html_content.to_string();
+//     //                 // fs::write(file_name, &html).expect("Failed to write HTML preview");
+//     // let pipeline = MetadataPipeline::new();
+//     // // reading html from file (test)
+//     // // let file_html= fs::read_to_string(html_content.as_ref()).expect("Failed to read file");
+//     // let file_html= html_content.to_string();
 
-    // // println!("Extracting from HTML  {}",file_html);
+//     // // println!("Extracting from HTML  {}",file_html);
 
-    // let metadata = pipeline.run(file_html.as_ref());
-    // let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_ref());
-    // println!("MetaDataEXTRACTED: {:?}", metadata);
+//     // let metadata = pipeline.run(file_html.as_ref());
+//     // let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_ref());
+//     // println!("MetaDataEXTRACTED: {:?}", metadata);
                     
-    //                 // println!("=== Blog #{} ===", blog_count + 1);
-    //                 // println!("Content preview {}",preview);
-    //                 // println!("{}", preview);
-    //                 // println!("-----");
+//     //                 // println!("=== Blog #{} ===", blog_count + 1);
+//     //                 // println!("Content preview {}",preview);
+//     //                 // println!("{}", preview);
+//     //                 // println!("-----");
                     
-    //                 blog_count += 1;
-    //                 if blog_count >= MAX_BLOGS {
-    //                     break;
-    //                 }
-    //             } else {
-    //                 // here we can check if it is RSS feed or atom 
-    //                 eprintln!("No HTML found in: {}", url);
-    //             }
-    //         }
-    //         Err(e) => {
-    //             eprintln!("Error buffering record: {}", e); 
-    //         }
-    //     }
-    }
+//     //                 blog_count += 1;
+//     //                 if blog_count >= MAX_BLOGS {
+//     //                     break;
+//     //                 }
+//     //             } else {
+//     //                 // here we can check if it is RSS feed or atom 
+//     //                 eprintln!("No HTML found in: {}", url);
+//     //             }
+//     //         }
+//     //         Err(e) => {
+//     //             eprintln!("Error buffering record: {}", e); 
+//     //         }
+//     //     }
+//     }
 
-    println!("Extracted {} Medium blogs", blog_count);
-    Ok(())
-}
+//     println!("Extracted {} Medium blogs", blog_count);
+//     Ok(())
+// }
 
 // Finds the start of HTML content in HTTP response
 fn find_html_start(body: &[u8]) -> Option<usize> {
@@ -299,3 +300,44 @@ fn find_html_start(body: &[u8]) -> Option<usize> {
 
 // """" get html 
 
+
+
+fn main() {
+
+    // ✅ Accepted: Medium blog post URLs
+let accepted = [
+    "https://orren.medium.com/why-a-new-conflict-in-the-middle-east-could-send-shockwaves-through-global-markets-a3340bb23c2d",
+    "https://medium.com/@user/article-title",
+    "https://medium.com/p/9f61864ab26",
+    "https://medium.com/p/be15760f3216",
+    "https://medium.com/obvious/e74637f2fe22",
+    "https://medium.com/aws-in-plain-english/we-ditched-microservices-39426a21d7c1",
+    "https://medium.com/aws-in-plain-english/we-ditched-microservices", // no hex suffix
+];
+let rejected = [
+    "https://medium.com/",
+    "https://medium.com/@user/",
+    "https://medium.com/@user",
+    "https://medium.com/tag/startups",
+    "https://medium.com/topic/technology",
+    "https://medium.com/publication/",
+    "https://medium.com/about",
+    "https://medium.com/membership",
+    "https://medium.com/aws-in-plain-english", // no slug
+];
+
+    let mut stat :HashMap<String, String>=HashMap::new();
+ for url in accepted{
+
+
+    let result=is_blog_url(url);
+     stat.insert(url.to_string(), result.to_string());
+     
+    
+ }
+
+ println!("accepted URLs test completed.{:?}",stat);
+
+
+  
+}
