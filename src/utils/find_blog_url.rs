@@ -110,10 +110,35 @@ static WORDPRESS_REGEX: Lazy<Regex> = Lazy::new(|| {
     "#).expect("Invalid WordPress regex pattern")
 });
 
+static SUBSTACK_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"(?xi)
+        ^https?://
+        (?: 
+            # Standard substack.com subdomains
+            [^/]+ \. substack \. com 
+            |
+            # Custom domains
+            [^/]+ 
+        )
+        /
+        (?: 
+            p/ [^/?]+      # Publication posts
+            | 
+            s/ [^/?]+      # Notes
+            |
+            \?p=\d+        # Query parameter format
+        )
+        /?$                # Optional trailing slash
+    "#).expect("Invalid Substack regex pattern")
+});
+
 
 
 pub fn is_blog_url(url: &str) -> bool {
 
     // MEDIUM_REGEX.is_match(url) ||
-    WORDPRESS_REGEX.is_match(url) 
+    // WORDPRESS_REGEX.is_match(url) ||
+    SUBSTACK_REGEX.is_match(url)
 }
+
+

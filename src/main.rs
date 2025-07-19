@@ -306,13 +306,16 @@ fn main() {
 
     // ✅ Accepted: Medium blog post URLs
 let accepted = [
-    "https://<domain>/?p=<post_id>",
-"https://<domain>/index.php?p=<post_id>",
-"https://<domain>/<year>/<month>/<day>/<post-slug>/",
-"https://<domain>/<year>/<month>/<post-slug>/",
-"https://<domain>/<post-slug>/",
-"https://<domain>/<category>/<post-slug>/",
-"https://<domain>/archives/<post_id>/"
+"https://example.substack.com/p/rust-tips",
+"http://newsletter.substack.com/p/web3-future/",
+"https://blog.example.com/p/this-is-a-post" , // Custom domain
+"https://tech.substack.com/s/short-note"  ,  // Note format
+"https://example.substack.com/?p=12345"  ,   // Query param
+"https://subdomain.example.com/p/post-slug" ,// Nested subdomain
+"https://example.substack.com/p/post-title-with-numbers-123",
+"https://example.substack.com/p/post_title_with_underscores",
+"https://example.substack.com/p/post-with-hyphens",
+"https://example.substack.com/s/note-slug"  ,// Short note
 
 // no hex suffix
 ];
@@ -326,7 +329,7 @@ let rejected = [
 ];
 
     let mut stat :HashMap<String, String>=HashMap::new();
- for url in rejected{
+ for url in accepted{
 
 
     let result=is_blog_url(url);
