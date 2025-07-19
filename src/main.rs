@@ -306,28 +306,27 @@ fn main() {
 
     // ✅ Accepted: Medium blog post URLs
 let accepted = [
-    "https://orren.medium.com/why-a-new-conflict-in-the-middle-east-could-send-shockwaves-through-global-markets-a3340bb23c2d",
-    "https://medium.com/@user/article-title",
-    "https://medium.com/p/9f61864ab26",
-    "https://medium.com/p/be15760f3216",
-    "https://medium.com/obvious/e74637f2fe22",
-    "https://medium.com/aws-in-plain-english/we-ditched-microservices-39426a21d7c1",
-    "https://medium.com/aws-in-plain-english/we-ditched-microservices", // no hex suffix
+    "https://<domain>/?p=<post_id>",
+"https://<domain>/index.php?p=<post_id>",
+"https://<domain>/<year>/<month>/<day>/<post-slug>/",
+"https://<domain>/<year>/<month>/<post-slug>/",
+"https://<domain>/<post-slug>/",
+"https://<domain>/<category>/<post-slug>/",
+"https://<domain>/archives/<post_id>/"
+
+// no hex suffix
 ];
 let rejected = [
-    "https://medium.com/",
-    "https://medium.com/@user/",
-    "https://medium.com/@user",
-    "https://medium.com/tag/startups",
-    "https://medium.com/topic/technology",
-    "https://medium.com/publication/",
-    "https://medium.com/about",
-    "https://medium.com/membership",
-    "https://medium.com/aws-in-plain-english", // no slug
+// Valid URLs:
+"https://example.com/2024/07/18/post-title/",
+"http://blog.example.com/news/rust-tips",
+"https://example.com/?p=12345",
+"https://example.com/blog/post-title",
+"https://example.com/category-name/post-title/", // no slug
 ];
 
     let mut stat :HashMap<String, String>=HashMap::new();
- for url in accepted{
+ for url in rejected{
 
 
     let result=is_blog_url(url);

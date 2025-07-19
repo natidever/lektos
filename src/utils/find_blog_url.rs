@@ -94,6 +94,26 @@ static MEDIUM_REGEX: Lazy<Regex> = Lazy::new(|| {
     ").unwrap()
 });
 
+static WORDPRESS_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"(?xi)
+        ^https?://               # Protocol
+        [^/]+                    # Domain
+        (?:/[^/]+)*              # Optional path segments
+        /
+        (?:
+          \d{4}/\d{1,2}(?:/\d{1,2})?/[^/?]+   # Date-based
+          |(?:blog|news|articles)/[^/?]+        # Custom prefixes
+          |[^/?]+(?:/[^/?]+)?                  # Single or double segment
+          |\?p=\d+                             # Query param
+        )
+        /?$                     # Optional trailing slash
+    "#).expect("Invalid WordPress regex pattern")
+});
+
+
+
 pub fn is_blog_url(url: &str) -> bool {
-    MEDIUM_REGEX.is_match(url)
+
+    // MEDIUM_REGEX.is_match(url) ||
+    WORDPRESS_REGEX.is_match(url) 
 }
