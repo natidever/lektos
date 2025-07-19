@@ -5,6 +5,7 @@ use regex::Regex;
 static BLOG_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| vec!
     [
     // Platform-specific patterns
+    Regex::new(r"^/(?:@[^/]+/[^/]+|[^/]+/[^/]+(?:-[\da-f]{12})?|p/[^/]+)$").unwrap(),  // Medium: @username/post-title OR p/post-id
     Regex::new(r"(?:^|\.)wordpress\.com(/[^/]+)?$").unwrap(),
     Regex::new(r"/\d{4}/\d{2}/[a-z0-9-]+\.html?").unwrap(),  // Date-based slugs
     Regex::new(r"/(?:post|article)s?/\d+/[a-z0-9-]+").unwrap(),
@@ -37,99 +38,107 @@ static ANTI_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| vec![
 
 static BLOG_PATTEsRNS: Lazy<Vec<(&str, Regex)>> = Lazy::new(|| vec![
     // Medium: @username/post-title OR p/post-id
-    ("medium.com", Regex::new(r"/(?:@[^/]+/[^/]+|p/[^/]+)$").unwrap()),
+    ("medium.com", Regex::new(r"^/(?:@[^/]+/[^/]+|[^/]+/[^/]+(?:-[\da-f]{12})?|p/[^/]+)$").unwrap()),
     
     // Substack: /p/post-title
-    ("substack.com", Regex::new(r"/p/[^/]+$").unwrap()),
+    // ("substack.com", Regex::new(r"/p/[^/]+$").unwrap()),
     
-    // Blogger: /YYYY/MM/post-title.html
-    ("blogspot.com", Regex::new(r"/\d{4}/\d{2}/[^/]+\.html$").unwrap()),
+    // // Blogger: /YYYY/MM/post-title.html
+    // ("blogspot.com", Regex::new(r"/\d{4}/\d{2}/[^/]+\.html$").unwrap()),
     
-    // WordPress: /YYYY/MM/DD/post-title/ OR ?p=post_id
-    ("wordpress.com", Regex::new(r"/(?:\d{4}/\d{2}/\d{2}/[^/]+/|\?p=\d+)").unwrap()),
+    // // WordPress: /YYYY/MM/DD/post-title/ OR ?p=post_id
+    // ("wordpress.com", Regex::new(r"/(?:\d{4}/\d{2}/\d{2}/[^/]+/|\?p=\d+)").unwrap()),
     
-    // Ghost: /post-title/ OR /blog/post-title
-    ("ghost.io", Regex::new(r"/(?:blog/)?[^/]+/$").unwrap()),
+    // // Ghost: /post-title/ OR /blog/post-title
+    // ("ghost.io", Regex::new(r"/(?:blog/)?[^/]+/$").unwrap()),
     
-    // Tumblr: /post/post-id/slug
-    ("tumblr.com", Regex::new(r"/post/\d+/[^/]+$").unwrap()),
+    // // Tumblr: /post/post-id/slug
+    // ("tumblr.com", Regex::new(r"/post/\d+/[^/]+$").unwrap()),
     
-    // Hashnode: /post-title-{hash}
-    ("hashnode.dev", Regex::new(r"/[^/]+-\w{8,}$").unwrap()),
+    // // Hashnode: /post-title-{hash}
+    // ("hashnode.dev", Regex::new(r"/[^/]+-\w{8,}$").unwrap()),
     
-    // Dev.to: /username/slug
-    ("dev.to", Regex::new(r"/[^/]+/[^/]+$").unwrap()),
+    // // Dev.to: /username/slug
+    // ("dev.to", Regex::new(r"/[^/]+/[^/]+$").unwrap()),
 ]);
 
 
-pub fn is_blog_url(url: &str) -> bool {
-    let url_lower = url.to_lowercase();
+// pub fn is_blog_url(url: &str) -> bool {
+//     let url_lower = url.to_lowercase();
     
    
 
-    // 2. Anti-pattern safety net
-    if ANTI_PATTERNS.iter().any(|re| re.is_match(&url_lower)) {
-        return false;
-    }
+//     // 2. Anti-pattern safety net
+//     // if ANTI_PATTERNS.iter().any(|re| re.is_match(&url_lower)) {
+//     //     return false;
+//     // }
 
-    // 3. Positive pattern matching
-    let positive_match = BLOG_PATTERNS.iter().any(|re| re.is_match(&url_lower));
+//     // 3. Positive pattern matching
+//     let positive_match = BLOG_PATTERNS.iter().any(|re| re.is_match(&url_lower));
     
-    // 4. Semantic path analysis
-    let path_segments: Vec<&str> = url_lower.split('/').collect();
-    let last_segment = path_segments.last().unwrap_or(&"");
-    let is_blog_like_path = path_segments.contains(&"blog") ||
-        last_segment.ends_with(".html") ||
-        (last_segment.contains('-') && !last_segment.contains('.'));
+    
 
-    // 5. TLD reinforcement
-    let is_common_blog_tld = url_lower.ends_with(".blog") || 
-        url_lower.contains(".blogspot.");
+//     positive_match 
+// }
 
-    positive_match || (is_blog_like_path && !is_common_blog_tld) || is_common_blog_tld
+
+
+static MEDIUM_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?x)
+        ^https://medium\.com/
+        (?:
+            @[^/]+/[\w-]+                # User posts (@username/slug)
+            |[\w-]+/[\w-]+(?:-[\da-f]{12})? # Publication posts (pub/slug or pub/slug-hexid)
+            |p/[\w-]+                     # Short-form posts (p/postid)
+        )$
+    ").unwrap()
+});
+
+static WORDPRESS_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"(?xi)
+        ^https?://               # Protocol
+        [^/]+                    # Domain
+        (?:/[^/]+)*              # Optional path segments
+        /
+        (?:
+          \d{4}/\d{1,2}(?:/\d{1,2})?/[^/?]+   # Date-based
+          |(?:blog|news|articles)/[^/?]+        # Custom prefixes
+          |[^/?]+(?:/[^/?]+)?                  # Single or double segment
+          |\?p=\d+                             # Query param
+        )
+        /?$                     # Optional trailing slash
+    "#).expect("Invalid WordPress regex pattern")
+});
+
+static SUBSTACK_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"(?xi)
+        ^https?://
+        (?: 
+            # Standard substack.com subdomains
+            [^/]+ \. substack \. com 
+            |
+            # Custom domains
+            [^/]+ 
+        )
+        /
+        (?: 
+            p/ [^/?]+      # Publication posts
+            | 
+            s/ [^/?]+      # Notes
+            |
+            \?p=\d+        # Query parameter format
+        )
+        /?$                # Optional trailing slash
+    "#).expect("Invalid Substack regex pattern")
+});
+
+
+
+pub fn is_blog_url(url: &str) -> bool {
+
+    // MEDIUM_REGEX.is_match(url) ||
+    // WORDPRESS_REGEX.is_match(url) ||
+    SUBSTACK_REGEX.is_match(url)
 }
 
 
-
-// fn is_blog_url(url: &str) -> bool {
-//     let url_lower = url.to_lowercase();
-    
-//     // Domain-based matching (more reliable than path-based)
-//     let is_target_domain = 
-//         url_lower.contains(".medium.com") ||
-//         url_lower.contains(".substack.com") ;
-//         // url_lower.contains(".tumblr.com") ||
-//         url_lower.contains(".blogspot.com") ;
-//         // // url_lower.contains(".wordpress.com") ||
-//         // url_lower.contains(".ghost.io") ||
-//         url_lower.contains("blogger.com") ;
-//         // // url_lower.contains(".hashnode.dev") ||
-//         // // url_lower.contains(".dev.to") ||
-//         // // url_lower.contains(".wixsite.com") ||
-//         // // url_lower.contains(".weebly.com");
-//         // url_lower.contains("/blog/");
-
-
-//     // Path-based exclusions
-//     let is_excluded_path = 
-//         url_lower.contains("/search") ||
-//         url_lower.contains("/tag/") ||
-//         url_lower.contains("/category/") ||
-//         url_lower.contains("/author/") ||
-//         url_lower.contains("/page/") ||
-//         url_lower.contains("/wp-json") ||
-//         url_lower.contains("/feed")||
-//         url_lower.contains("/comments")||
-//         url_lower.contains("/support")||
-//         url_lower.contains("/home");
-//         url_lower.contains("/account");
-
-
-       
-
-
-
-
-//     is_target_domain && !is_excluded_path
-//     //    is_target_domain
-// }
