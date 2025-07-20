@@ -1,7 +1,7 @@
-# Run ALL tests with `--nocapture` (e.g., `just test-all`)
+# Run ALL tests with 
 test-all:
   cargo test -- --nocapture
 
-# Run a SPECIFIC test file with `--nocapture` (e.g., `just test-feed test_feed`)
+# Run a SPECIFIC test file with 
 test TEST_NAME:
-  cargo test --test {{ TEST_NAME }} -- --nocapture
+  cargo test --test {{ TEST_NAME }} 
