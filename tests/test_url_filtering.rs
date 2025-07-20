@@ -140,21 +140,19 @@ mod tests {
             "https://medium.com/tag/technology",
             "https://medium.com/search?q=rust",
             // // User profiles
-            // "https://medium.com/@username",
-
+            "https://medium.com/@username",
             // Publication pages
-            // "https://medium.com/publication-name",
+            "https://medium.com/publication-name",
             "https://medium.com/publication-name/about",
             // Incomplete URLs
-            // "https://medium.com/p/",
-            // "https://medium.com/p/?source=featured",
-            // "https://medium.com/@username/",
-
+            "https://medium.com/p/",
+            "https://medium.com/p/?source=featured",
+            "https://medium.com/@username/",
             // Media and other non-post pages
-            // "https://medium.com/media/123abc",
-            // "https://medium.com/help",
-            // "https://mediums.com/policy",
-            // "https://medium.com/subscribe"
+            "https://medium.com/media/123abc",
+            "https://medium.com/help",
+            "https://mediums.com/policy",
+            "https://medium.com/subscribe",
         ];
 
         for url in invalid_urls {
