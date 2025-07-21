@@ -24,12 +24,10 @@ pub fn parse_feed(content:
 
 
 
-use feed_rs::model::Entry;
 
 pub fn extract_feed(content: &str) -> Result<Vec<FeedExtractionResult>, Box<dyn std::error::Error>> {
     // Parse with feed_rs first
-    let feed = parser::parse(content.as_bytes())?;
-    
+    let feed = parse_feed(content)?;
     // Parse with rss for Dublin Core fallback
     let channel = Channel::read_from(content.as_bytes())?;
     
@@ -98,6 +96,28 @@ pub fn extract_feed(content: &str) -> Result<Vec<FeedExtractionResult>, Box<dyn 
 
 
 
+
+fn test_it() -> Result<(), Error> {
+    // 1. Read the XML file
+    let content = std::fs::read_to_string("tests/fixtures/medium.xml")?;
+    
+    // 2. Process the feed
+    let results = extract_feed(&content).unwrap();
+    
+    // 3. Print the results
+    println!("Found {} items:", results.len());
+    for (i, item) in results.iter().enumerate() {
+        println!("\nItem {}:", i + 1);
+        println!("Title: {}", item.title);
+        println!("Author: {}", item.author);
+        // println!("Description: {}", item.description);
+        println!("Date: {}", item.date);
+        // println!("Publisher: {}", item.publisher);
+        println!("URL: {}", item.url);
+    }
+    
+    Ok(())
+}
 
 
 
