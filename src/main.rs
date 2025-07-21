@@ -146,7 +146,13 @@ fn main() -> io::Result<()> {
                             .open("feed_urls.html")?;
                         let feed = parse_feed(string_content.as_ref());
 
-
+                            if let Some(feed) = feed.ok() {
+                            
+                                writeln!(file, "{}", url)?;
+                                // println!("Feed title: {}", feed.title.unwrap_or_default().content);
+                            } else {
+                                println!("Failed to parse feed from: {}", url);
+                            }
 
 
                     

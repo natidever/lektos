@@ -1,11 +1,12 @@
 
 use feed_rs::parser;
-
 use lektos::utils::find_feeds::is_feed;
 
 #[cfg(test)]
 mod tests {
-    use lektos::utils::find_feeds::parse_feed;
+    use std::fs;
+
+    use lektos::utils::find_feeds::{name_space_extesnion, parse_feed};
 
     use super::*;
 
@@ -116,6 +117,7 @@ mod tests {
 
     #[test]
     fn parse_large_feed() {
+        // capacity will change
         let mut large_feed = String::with_capacity(10_000);
         large_feed.push_str(r#"<rss version="2.0"><channel><title>Large Feed</title>"#);
 
@@ -132,5 +134,20 @@ mod tests {
         let result = parse_feed(&large_feed);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().entries.len(), 1000);
+    }
+
+
+    #[test]
+    fn test_different_feed_formats(){
+      
+
+
+    
+
+    let parse_feed = name_space_extesnion();
+
+
+
+
     }
 }
