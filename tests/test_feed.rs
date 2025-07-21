@@ -1,20 +1,15 @@
 
-        use feed_rs::parser;
+use feed_rs::parser;
 
-    use lektos::utils::find_feeds::is_feed;
+use lektos::utils::find_feeds::is_feed;
 
 #[cfg(test)]
 mod tests {
     use lektos::utils::find_feeds::parse_feed;
 
-    use super::*;      
+    use super::*;
 
-
-    
-    
-    
-
-     const VALID_RSS: &str = r#"
+    const VALID_RSS: &str = r#"
     <?xml version="1.0"?>
     <rss version="2.0">
         <channel>
@@ -29,6 +24,8 @@ mod tests {
         </channel>
     </rss>
     "#;
+
+    
 
     // Valid Atom 1.0 sample
     const VALID_ATOM: &str = r#"
@@ -50,7 +47,7 @@ mod tests {
     fn parse_valid_rss() {
         let result = parse_feed(VALID_RSS);
         assert!(result.is_ok());
-        
+
         let feed = result.unwrap();
         assert_eq!(feed.title.unwrap().content, "RSS Example Blog");
         assert_eq!(feed.entries.len(), 1);
@@ -60,7 +57,7 @@ mod tests {
     fn parse_valid_atom() {
         let result = parse_feed(VALID_ATOM);
         assert!(result.is_ok());
-        
+
         let feed = result.unwrap();
         assert_eq!(feed.title.unwrap().content, "Atom Example Blog");
         assert_eq!(feed.entries.len(), 1);
@@ -70,7 +67,6 @@ mod tests {
     fn parse_empty_string() {
         let result = parse_feed("");
         assert!(result.is_err());
-    
     }
 
     #[test]
@@ -88,7 +84,7 @@ mod tests {
             </channel>
         </rss>
         "#;
-        
+
         let result = parse_feed(malformed);
         assert!(result.is_err());
     }
@@ -101,7 +97,7 @@ mod tests {
             "title": "JSON Feed"
         }
         "#;
-        
+
         let result = parse_feed(json_feed);
         assert!(result.is_err());
     }
@@ -112,20 +108,17 @@ mod tests {
             r#"<rss version="2.0"><channel><title>Test &amp; {}</title></channel></rss>"#,
             "Entities"
         );
-        
+
         let result = parse_feed(&feed);
         assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap().title.unwrap().content,
-            "Test & Entities"
-        );
+        assert_eq!(result.unwrap().title.unwrap().content, "Test & Entities");
     }
 
     #[test]
     fn parse_large_feed() {
         let mut large_feed = String::with_capacity(10_000);
         large_feed.push_str(r#"<rss version="2.0"><channel><title>Large Feed</title>"#);
-        
+
         // Generate 1000 items
         for i in 0..1000 {
             large_feed.push_str(&format!(
@@ -133,18 +126,11 @@ mod tests {
                 i
             ));
         }
-        
+
         large_feed.push_str("</channel></rss>");
-        
+
         let result = parse_feed(&large_feed);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().entries.len(), 1000);
     }
-
-
-    
-
-
-
-
 }

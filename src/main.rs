@@ -1,3 +1,4 @@
+use lektos::utils::find_feeds::parse_feed;
 // use warc::Record;
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -14,6 +15,7 @@ use crate::models::blog::Blog;
 use crate::models::metadata;
 use crate::utils::embed::generate_embedding;
 use crate::utils::find_blog_url::is_blog_url;
+use crate::utils::find_feeds::is_feed;
 use crate::utils::html_utils::BlogProcessor;
 
 mod extractors;
@@ -25,22 +27,23 @@ use std::io::Write;
 use anyhow::Result;
 
 fn main() -> io::Result<()> {
+    // PSEUDO-CODE - CONCEPTUAL IMPLEMENTATION
 
-// PSEUDO-CODE - CONCEPTUAL IMPLEMENTATION
+    
 
-use rayon::prelude::*;
-use std::sync::atomic::{AtomicUsize, Ordering};
+    use rayon::prelude::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     println!("Extracting  blogs from WARC file...");
     // let warc_name = "src/resources/2025-26.warc";
-    let warc_name = "src/resources/CC-MAIN-20250612112840-20250612142840-00000.warc.gz";
+    let warc_name = "src/common_crawl_2025-26_warcfiles/CC-MAIN-20250612112840-20250612142840-00003.warc.gz";
 
     let mut reader = WarcReader::from_path_gzip(warc_name)?;
 
     let mut stream_iter = reader.stream_records();
-// let mut records = Vec::new();
+    // let mut records = Vec::new();
 
-// Use a loop with explicit scoping
+    // Use a loop with explicit scoping
 
     // let mut strea_iter=reader::stream_recored();
 
@@ -50,7 +53,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
     let mut confirmed_blogs = 0;
 
     while let Some(record_result) = stream_iter.next_item() {
-
         let record = match record_result {
             Ok(r) => r,
             Err(e) => {
@@ -59,18 +61,18 @@ use std::sync::atomic::{AtomicUsize, Ordering};
             }
         };
 
-        
         // Extract URL
-        let url = record.header(WarcHeader::TargetURI)
+        let url = record
+            .header(WarcHeader::TargetURI)
             .map(|s| s.to_string())
             .unwrap_or_default();
 
-       if !is_blog_url(&url){
-        // let mut file = OpenOptions::new()
-        // .append(true)  // Open in append mode
-        // .create(true)  // Create the file if it doesn't exist
-        // .open("rejected_url.html")?;
-        // writeln!(file, "{}", url)?;
+        if !is_blog_url(&url) {
+            // let mut file = OpenOptions::new()
+            // .append(true)  // Open in append mode
+            // .create(true)  // Create the file if it doesn't exist
+            // .open("rejected_url.html")?;
+            // writeln!(file, "{}", url)?;
 
             continue;
         }
@@ -78,10 +80,12 @@ use std::sync::atomic::{AtomicUsize, Ordering};
         // .append(true)  // Open in append mode
         // .create(true)  // Create the file if it doesn't exist
         // .open("accepted_url.html")?;
-    // writeln!(file, "{}", url)?;
+        // writeln!(file, "{}", url)?;
 
         // Check WARC type is response (contains actual content)
-        if record.header(WarcHeader::WarcType).map(|s| s.to_string()) != Some("response".to_string()) {
+        if record.header(WarcHeader::WarcType).map(|s| s.to_string())
+            != Some("response".to_string())
+        {
             continue;
         }
 
@@ -95,7 +99,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
                     let html = &body[html_start..];
                     let html_content = String::from_utf8_lossy(&html);
                     let file_name = format!("sub_sblog_{}.html", blog_count + 1);
-                    println!("URL {}",url);
+                    // println!("URL {}", url);
 
                     // if url.contains(".substack"){
                     // fs::write(file_name, &html).expect("Failed to write HTML preview");
@@ -103,16 +107,16 @@ use std::sync::atomic::{AtomicUsize, Ordering};
                     // }
 
                     // fs::write(file_name, &html).expect("Failed to write HTML preview");
-    let pipeline = MetadataPipeline::new();
-    // reading html from file (test)
-    // let file_html= fs::read_to_string(html_content.as_ref()).expect("Failed to read file");
-    let file_html= html_content.to_string();
+                    let pipeline = MetadataPipeline::new();
+                    // reading html from file (test)
+                    // let file_html= fs::read_to_string(html_content.as_ref()).expect("Failed to read file");
+                    let file_html = html_content.to_string();
 
-    // println!("Extracting from HTML  {}",file_html);
+                    // println!("Extracting from HTML  {}",file_html);
 
-    let metadata = pipeline.run(file_html.as_ref());
-    let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_ref());
-    println!("MetaDataEXTRACTED: {:?}", metadata);
+                    // let metadata = pipeline.run(file_html.as_ref());
+                    // let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_ref());
+                    // println!("MetaDataEXTRACTED: {:?}", metadata);
 
                     // println!("=== Blog #{} ===", blog_count + 1);
                     // println!("Content preview {}",preview);
@@ -124,20 +128,42 @@ use std::sync::atomic::{AtomicUsize, Ordering};
                         break;
                     }
                 } else {
-                    // here we can check if it is RSS feed or atom
-                    eprintln!("No HTML found in: {}", url);
-                      let mut file = OpenOptions::new()
-        .append(true)  // Open in append mode
-        .create(true)  // Create the file if it doesn't exist
-        .open("non_html_files.html")?;
-        writeln!(file, "{}", url)?;
+                                            println!("Found nonhtml in: {}", url);
+
+
+
+                    let string_content = String::from_utf8_lossy(body);
+                     fs::write("string_contnet.html", string_content.as_ref())
+                        .expect("Failed to write string content to file");
+                    
+                    
+                    // here we can check if it is Rss/atoms
+                    if is_feed(string_content.as_ref()) {
+                        println!("Found feed in: {}", url);
+                        let mut file = OpenOptions::new()
+                            .append(true) // Open in append mode
+                            .create(true) // Create the file if it doesn't exist
+                            .open("feed_urls.html")?;
+                        let feed = parse_feed(string_content.as_ref());
+
+
+
+
+                    
+                    let mut file = OpenOptions::new()
+                        .append(true) // Open in append mode
+                        .create(true) // Create the file if it doesn't exist
+                        .open("non_html_files.html")?;
+                    writeln!(file, "{}", url)?;
+                    }
+
+                    
                 }
             }
             Err(e) => {
                 eprintln!("Error buffering record: {}", e);
             }
         }
-    
     }
 
     println!("Extracted {} Medium blogs", blog_count);
