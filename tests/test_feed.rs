@@ -1,4 +1,3 @@
-
 use feed_rs::parser;
 use lektos::utils::find_feeds::is_feed;
 
@@ -6,7 +5,7 @@ use lektos::utils::find_feeds::is_feed;
 mod tests {
     use std::fs;
 
-    use lektos::utils::find_feeds::{name_space_extesnion, parse_feed};
+    use lektos::utils::find_feeds::{dubline_extractor, parse_feed};
 
     use super::*;
 
@@ -25,8 +24,6 @@ mod tests {
         </channel>
     </rss>
     "#;
-
-    
 
     // Valid Atom 1.0 sample
     const VALID_ATOM: &str = r#"
@@ -136,18 +133,10 @@ mod tests {
         assert_eq!(result.unwrap().entries.len(), 1000);
     }
 
-
     #[test]
-    fn test_different_feed_formats(){
-      
+    fn test_different_feed_formats() {
+        dubline_extractor()
 
-
-    
-
-    let parse_feed = name_space_extesnion();
-
-
-
-
+        // let parse_feed = name_space_extesnion();
     }
 }

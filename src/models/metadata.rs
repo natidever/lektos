@@ -15,6 +15,15 @@ pub struct ExtractionResult {
     pub confidence: f32, // 0.0-1.0
 }
 
+pub struct FeedExtractionResult {
+    pub title: String,
+    pub author: String,
+    pub description: String,
+    pub date: String,
+    // pub publisher: String,
+    pub url :String, // 0.0-1.0
+}
+
 #[derive(Debug)]
 pub struct FieldResult {
     pub value: String,
