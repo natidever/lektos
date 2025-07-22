@@ -2,6 +2,9 @@ use anyhow::Error;
 use lektos::utils::find_feeds::parse_feed;
 // use warc::Record;
 use rayon::prelude::*;
+use warc::BufferedBody;
+use warc::Record;
+use warc::StreamingBody;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::OpenOptions;
@@ -28,30 +31,32 @@ use std::io::Write;
 // Import Embedding and Embeddings from the 'embed' module
 use anyhow::Result;
 
-fn main() -> io::Result<()> {
-    // PSEUDO-CODE - CONCEPTUAL IMPLEMENTATION
-
     use rayon::prelude::*;
-    use std::sync::atomic::{AtomicUsize, Ordering};
 
-    println!("Extracting  blogs from WARC file...");
-    // let warc_name = "src/resources/2025-26.warc";
-    let warc_name =
-        "src/common_crawl_2025-26_warcfiles/CC-MAIN-20250612112840-20250612142840-00003.warc.gz";
+
+
+// Finds the start of HTML content in HTTP response
+
+
+
+
+
+
+
+pub fn main_main (){
+    // is url feed
+     
+    let warc_name = "src/common_crawl_2025-26_warcfiles/CC-MAIN-20250612112840-20250612142840-00003.warc.gz";
 
     let mut reader = WarcReader::from_path_gzip(warc_name)?;
 
     let mut stream_iter = reader.stream_records();
-    // let mut records = Vec::new();
-
-    // Use a loop with explicit scoping
-
-    // let mut strea_iter=reader::stream_recored();
 
     let mut blog_count = 0;
     const MAX_BLOGS: usize = 500;
 
     let mut confirmed_blogs = 0;
+
 
     while let Some(record_result) = stream_iter.next_item() {
         let record = match record_result {
@@ -61,37 +66,39 @@ fn main() -> io::Result<()> {
                 continue;
             }
         };
-
         // Extract URL
         let url = record
             .header(WarcHeader::TargetURI)
             .map(|s| s.to_string())
             .unwrap_or_default();
 
-        if !is_blog_url(&url) {
-            // let mut file = OpenOptions::new()
-            // .append(true)  // Open in append mode
-            // .create(true)  // Create the file if it doesn't exist
-            // .open("rejected_url.html")?;
-            // writeln!(file, "{}", url)?;
+        if is_feed(content){
+            if is_url_visited(){
+                todo!()
 
-            continue;
+            }else{
+                // store it as valid url that can be fetched without classifier
+            }
         }
-        //   let mut file = OpenOptions::new()
-        // .append(true)  // Open in append mode
-        // .create(true)  // Create the file if it doesn't exist
-        // .open("accepted_url.html")?;
-        // writeln!(file, "{}", url)?;
 
-        // Check WARC type is response (contains actual content)
+    
+
+        // Check WARC type is response (contains actual content) which is the html
         if record.header(WarcHeader::WarcType).map(|s| s.to_string())
             != Some("response".to_string())
         {
             continue;
         }
+         if is_url_visited(){ continue;}
 
-        // Process content
-        match record.into_buffered() {
+        if is_url_from_feed(){
+            //store it to valid url
+        }else{
+            if is_blog_url(url){
+                // process
+            } else{
+                // do nothin
+                match record.into_buffered() {
             Ok(buffered) => {
                 let body = buffered.body();
 
@@ -128,7 +135,8 @@ fn main() -> io::Result<()> {
                     if blog_count >= MAX_BLOGS {
                         break;
                     }
-                } else {
+                } 
+                else {
                     println!("Found nonhtml in: {}", url);
 
                     let string_content = String::from_utf8_lossy(body);
@@ -163,13 +171,35 @@ fn main() -> io::Result<()> {
                 eprintln!("Error buffering record: {}", e);
             }
         }
-    }
+            
+            }
+        }
+        
+       
+        
 
-    println!("Extracted {} Medium blogs", blog_count);
-    Ok(())
+        // Process content
+        
+    }
+   
 }
 
-// Finds the start of HTML content in HTTP response
+
+
+
+pub fn is_url_visited(){
+    todo!()
+}
+
+pub fn is_url_from_feed(){
+    todo!()
+}
+
+
+
+
+
+
 fn find_html_start(body: &[u8]) -> Option<usize> {
     // Look for end of HTTP headers (blank line)
     let header_end = body
