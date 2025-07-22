@@ -2,6 +2,7 @@ use anyhow::Error;
 use lektos::utils::find_feeds::parse_feed;
 // use warc::Record;
 use rayon::prelude::*;
+use reqwest::Response;
 use warc::BufferedBody;
 use warc::Record;
 use warc::StreamingBody;
@@ -22,6 +23,7 @@ use crate::utils::find_blog_url::is_blog_url;
 use crate::utils::find_feeds::extract_feed;
 use crate::utils::find_feeds::is_feed;
 use crate::utils::html_utils::BlogProcessor;
+// use crate::utils::valid_url_from_feeds::test_rock_db;
 
 mod extractors;
 mod models;
@@ -38,17 +40,28 @@ use anyhow::Result;
 // Finds the start of HTML content in HTTP response
 
 
+// pub fn main_m (){
+
+//     let files = fs::read_to_string("tests/fixtures/medium.xml").expect("Unable to read file");
+
+//     let result = extract_url(&files).expect("Failed to extract feed");
+
+//     println!("Extracted url,{}",result);
+    
+
+
+// }
 
 
 
 
-
-pub fn main_main (){
+pub fn main (){
+    // main_m();
     // is url feed
      
     let warc_name = "src/common_crawl_2025-26_warcfiles/CC-MAIN-20250612112840-20250612142840-00003.warc.gz";
 
-    let mut reader = WarcReader::from_path_gzip(warc_name)?;
+    let mut reader = WarcReader::from_path_gzip(warc_name).unwrap();
 
     let mut stream_iter = reader.stream_records();
 
@@ -72,14 +85,7 @@ pub fn main_main (){
             .map(|s| s.to_string())
             .unwrap_or_default();
 
-        if is_feed(content){
-            if is_url_visited(){
-                todo!()
-
-            }else{
-                // store it as valid url that can be fetched without classifier
-            }
-        }
+       
 
     
 
@@ -92,12 +98,12 @@ pub fn main_main (){
          if is_url_visited(){ continue;}
 
         if is_url_from_feed(){
-            //store it to valid url
+
+            //store it db to valid url
         }else{
-            if is_blog_url(url){
-                // process
-            } else{
-                // do nothin
+            if is_blog_url(&url){
+
+
                 match record.into_buffered() {
             Ok(buffered) => {
                 let body = buffered.body();
@@ -107,29 +113,14 @@ pub fn main_main (){
                     let html = &body[html_start..];
                     let html_content = String::from_utf8_lossy(&html);
                     let file_name = format!("sub_sblog_{}.html", blog_count + 1);
-                    // println!("URL {}", url);
+                    
 
-                    // if url.contains(".substack"){
-                    // fs::write(file_name, &html).expect("Failed to write HTML preview");
+                    
 
-                    // }
-
-                    // fs::write(file_name, &html).expect("Failed to write HTML preview");
                     let pipeline = MetadataPipeline::new();
-                    // reading html from file (test)
-                    // let file_html= fs::read_to_string(html_content.as_ref()).expect("Failed to read file");
                     let file_html = html_content.to_string();
 
-                    // println!("Extracting from HTML  {}",file_html);
-
-                    // let metadata = pipeline.run(file_html.as_ref());
-                    // let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_ref());
-                    // println!("MetaDataEXTRACTED: {:?}", metadata);
-
-                    // println!("=== Blog #{} ===", blog_count + 1);
-                    // println!("Content preview {}",preview);
-                    // println!("{}", preview);
-                    // println!("-----");
+                  
 
                     blog_count += 1;
                     if blog_count >= MAX_BLOGS {
@@ -137,33 +128,16 @@ pub fn main_main (){
                     }
                 } 
                 else {
-                    println!("Found nonhtml in: {}", url);
+                    // the content is not htm check if it is feed (which is xml format )
 
                     let string_content = String::from_utf8_lossy(body);
-                    fs::write("string_contnet.html", string_content.as_ref())
-                        .expect("Failed to write string content to file");
-
+                   
                     // here we can check if it is Rss/atoms
                     if is_feed(string_content.as_ref()) {
-                        println!("Found feed in: {}", url);
-                        let mut file = OpenOptions::new()
-                            .append(true) // Open in append mode
-                            .create(true) // Create the file if it doesn't exist
-                            .open("feed_urls.html")?;
-                        let feed = parse_feed(string_content.as_ref());
+                        // extract the url from here 
 
-                        if let Some(feed) = feed.ok() {
-                            writeln!(file, "{}", url)?;
-                            // println!("Feed title: {}", feed.title.unwrap_or_default().content);
-                        } else {
-                            println!("Failed to parse feed from: {}", url);
-                        }
-
-                        let mut file = OpenOptions::new()
-                            .append(true) // Open in append mode
-                            .create(true) // Create the file if it doesn't exist
-                            .open("non_html_files.html")?;
-                        writeln!(file, "{}", url)?;
+                        // store it in rockdb as valid url(no need classification later)
+                        
                     }
                 }
             }
@@ -171,6 +145,11 @@ pub fn main_main (){
                 eprintln!("Error buffering record: {}", e);
             }
         }
+                
+               
+            } else{
+                // do nothin
+                // the blog is not url
             
             }
         }
@@ -178,7 +157,6 @@ pub fn main_main (){
        
         
 
-        // Process content
         
     }
    
@@ -187,11 +165,11 @@ pub fn main_main (){
 
 
 
-pub fn is_url_visited(){
+pub fn is_url_visited()->bool{
     todo!()
 }
 
-pub fn is_url_from_feed(){
+pub fn is_url_from_feed()->bool{
     todo!()
 }
 

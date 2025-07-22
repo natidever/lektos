@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use anyhow::Error;
 use feed_rs::parser;
 
+use feed_rs::model::Link;
+
 use reqwest::header::CONTENT_LENGTH;
 use rss::Channel;
 
@@ -24,6 +26,16 @@ pub fn parse_feed(content:
 
 
 
+
+
+pub fn extract_url(content: &str)->Result<Vec<Link>,Error> {
+
+    let feed = parser::parse(content.as_bytes())?;
+     Ok( feed.links)
+
+ 
+
+}
 
 pub fn extract_feed(content: &str) -> Result<Vec<FeedExtractionResult>, Box<dyn std::error::Error>> {
     // Parse with feed_rs first
