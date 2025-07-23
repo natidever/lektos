@@ -1,4 +1,5 @@
 use anyhow::Error;
+use lektos::utils::find_feeds::extract_url;
 use lektos::utils::find_feeds::parse_feed;
 // use warc::Record;
 use rayon::prelude::*;
@@ -23,6 +24,8 @@ use crate::utils::find_blog_url::is_blog_url;
 use crate::utils::find_feeds::extract_feed;
 use crate::utils::find_feeds::is_feed;
 use crate::utils::html_utils::BlogProcessor;
+use crate::utils::valid_url_from_feeds::is_url_from_feed;
+use crate::utils::valid_url_from_feeds::store_valid_url_from_feed;
 // use crate::utils::valid_url_from_feeds::test_rock_db;
 
 mod extractors;
@@ -55,7 +58,7 @@ use anyhow::Result;
 
 
 
-pub fn main (){
+pub fn main ()-> Result<()> {
     // main_m();
     // is url feed
      
@@ -97,9 +100,9 @@ pub fn main (){
         }
          if is_url_visited(){ continue;}
 
-        if is_url_from_feed(){
+        if is_url_from_feed(&url)?{
 
-            //store it db to valid url
+            //processs it 
         }else{
             if is_blog_url(&url){
 
@@ -135,8 +138,13 @@ pub fn main (){
                     // here we can check if it is Rss/atoms
                     if is_feed(string_content.as_ref()) {
                         // extract the url from here 
+                      let urls=  extract_url(string_content.as_ref()).unwrap();
+                      
 
-                        // store it in rockdb as valid url(no need classification later)
+                        // store it in db as valid url(no need classification later)
+                        store_valid_url_from_feed(&urls).unwrap();
+
+                    
                         
                     }
                 }
@@ -159,7 +167,7 @@ pub fn main (){
 
         
     }
-   
+   Ok(())
 }
 
 
@@ -169,9 +177,6 @@ pub fn is_url_visited()->bool{
     todo!()
 }
 
-pub fn is_url_from_feed()->bool{
-    todo!()
-}
 
 
 

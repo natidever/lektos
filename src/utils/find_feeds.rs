@@ -28,14 +28,21 @@ pub fn parse_feed(content:
 
 
 
-pub fn extract_url(content: &str)->Result<Vec<Link>,Error> {
+pub fn extract_url(content: &str)->Result<Vec<String>,Error> {
 
     let feed = parser::parse(content.as_bytes())?;
-     Ok( feed.links)
+    let mut url = Vec::new();
 
+     for entry in feed.entries {
+        // println!("Blog post URL: {}", entry.id);
+        url.push(entry.id.clone());
+    }
+    Ok(url)
  
 
 }
+
+
 
 pub fn extract_feed(content: &str) -> Result<Vec<FeedExtractionResult>, Box<dyn std::error::Error>> {
     // Parse with feed_rs first
