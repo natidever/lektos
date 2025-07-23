@@ -21,7 +21,7 @@ pub struct FeedExtractionResult {
     pub description: String,
     pub date: String,
     // pub publisher: String,
-    pub url :String, // 0.0-1.0
+    pub url: String, // 0.0-1.0
 }
 
 #[derive(Debug)]

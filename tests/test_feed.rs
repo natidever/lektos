@@ -5,7 +5,6 @@ use lektos::utils::find_feeds::is_feed;
 mod tests {
     use std::fs;
 
-
     use lektos::utils::find_feeds::parse_feed;
 
     use super::*;
@@ -133,6 +132,4 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(result.unwrap().entries.len(), 1000);
     }
-
-  
 }

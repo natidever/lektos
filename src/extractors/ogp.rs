@@ -54,7 +54,7 @@ impl MetadataExtractor for OgpExtractor {
                         "date" => extraction_result.date = Some(field_result),
                         "publisher" => extraction_result.publisher = Some(field_result),
                         _ => {}
-                    } 
+                    }
 
                     found_count += 1;
                     break;
