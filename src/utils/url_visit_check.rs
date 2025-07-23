@@ -18,7 +18,7 @@ impl UrlStore {
         
         let partition = keyspace
             .open_partition("visited_urls", PartitionCreateOptions::default())
-            .expect("Failed to create partition");
+            .expect("Failed to create psartition");
         
         Self { partition }
     }

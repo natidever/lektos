@@ -6,12 +6,12 @@ use std::path::Path;
 
 // RSS URL verification system
 pub struct RssUrlVerifier {
-    bloom: BloomFilter,          
-    partition: Partition,        
+    bloom: BloomFilter,          // In-memory Bloom filter
+    partition: Partition,         // Fjall disk partition
 }
 
 impl RssUrlVerifier {
-
+    /// Initialize the RSS verifier with its own partition
     pub fn new(db_path: &Path) -> Result<Self, Error> {
         let keyspace = Config::new(db_path).open()?;
         let partition = keyspace.open_partition("rss_urls", PartitionCreateOptions::default())?;
@@ -57,3 +57,4 @@ impl RssUrlVerifier {
     }
 }
 
+// Example usage
