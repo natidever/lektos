@@ -24,8 +24,8 @@ use crate::utils::find_blog_url::is_blog_url;
 use crate::utils::find_feeds::extract_feed;
 use crate::utils::find_feeds::is_feed;
 use crate::utils::html_utils::BlogProcessor;
-use crate::utils::valid_url_from_feeds::is_url_from_feed;
-use crate::utils::valid_url_from_feeds::store_valid_url_from_feed;
+// use crate::utils::valid_url_from_feeds::is_url_from_feed;
+// use crate::utils::valid_url_from_feeds::store_valid_url_from_feed;
 // use crate::utils::valid_url_from_feeds::test_rock_db;
 
 mod extractors;
@@ -100,7 +100,7 @@ pub fn main ()-> Result<()> {
         }
          if is_url_visited(){ continue;}
 
-        if is_url_from_feed(&url)?{
+        if is_url_from_feed(&url){
 
             //processs it 
         }else{
@@ -142,7 +142,7 @@ pub fn main ()-> Result<()> {
                       
 
                         // store it in db as valid url(no need classification later)
-                        store_valid_url_from_feed(&urls).unwrap();
+                        // store_valid_url_from_feed(&urls).unwrap();
 
                     
                         
@@ -201,4 +201,9 @@ fn find_html_start(body: &[u8]) -> Option<usize> {
         .position(|w| w.eq_ignore_ascii_case(b"<html") || w.eq_ignore_ascii_case(b"<!doc"))?;
 
     Some(header_end + html_tag_start)
+}
+
+pub fn is_url_from_feed(url: &str) -> bool {
+    todo!()
+
 }
