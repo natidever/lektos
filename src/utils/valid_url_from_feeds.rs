@@ -34,7 +34,7 @@ let items = keyspace.open_partition("my_items", PartitionCreateOptions::default(
 let bytes = items.get("a")?;
 
 
-// same again we'll compare the hash not hte real string value
+// todo:same again we'll compare the hash not hte real string value
 
 
 
@@ -49,9 +49,6 @@ let bytes = items.get("a")?;
         None => Ok(false),
     }
 
-
-
-
-  
-
 }
+
+
