@@ -1,2 +1,2 @@
-pub mod metadata;
 pub mod blog;
+pub mod metadata;

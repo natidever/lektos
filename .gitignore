@@ -3,6 +3,8 @@ resource.warc.gz
 *.html 
 # Compiled files and target directory
 /target/
+bin
+src/bin/
 
 # Build artifacts
 **/*.rlib
