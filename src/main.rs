@@ -108,7 +108,32 @@ pub fn main ()-> Result<()> {
 
 
         if feed_url_validator.is_from_feed(&url)?{
-            //processs it without the need for classifier 
+            match record.into_buffered() {
+            Ok(buffered) => {
+                let body = buffered.body(); 
+
+                // Extract the actual HTML from the HTTP response
+                if let Some(html_start) = BlogProcessor::find_html_start(body) {
+                    let html = &body[html_start..];
+                    let html_content = String::from_utf8_lossy(&html);
+                    let file_name = format!("sub_sblog_{}.html", blog_count + 1);
+                    let pipeline = MetadataPipeline::new();
+                    let file_html = html_content.to_string();
+                    blog_count += 1;
+                    if blog_count >= MAX_BLOGS {
+                        break;
+                    }
+                } 
+                else {
+                    eprintln!("No HTML content found in record for URL: {}", url);
+                    continue;
+                   
+                }
+            }
+            Err(e) => {
+                eprintln!("Error buffering record: {}", e);
+            }
+        }
 
             
 
