@@ -7,49 +7,31 @@ use std::collections::HashSet;
 pub struct BlogProcessor;
 
 impl BlogProcessor {
-
-
     pub fn find_html_start(body: &[u8]) -> Option<usize> {
-    // Look for end of HTTP headers (blank line)
-    let header_end = body
-        .windows(4)
-        .position(|w| w == b"\r\n\r\n")
-        .map(|pos| pos + 4)
-        .or_else(|| {
-            body.windows(2)
-                .position(|w| w == b"\n\n")
-                .map(|pos| pos + 2)
-        })?;
+        // Look for end of HTTP headers (blank line)
+        let header_end = body
+            .windows(4)
+            .position(|w| w == b"\r\n\r\n")
+            .map(|pos| pos + 4)
+            .or_else(|| {
+                body.windows(2)
+                    .position(|w| w == b"\n\n")
+                    .map(|pos| pos + 2)
+            })?;
 
-    // Look for HTML tags after headers
-    let html_tag_start = body[header_end..]
-        .windows(5)
-        .position(|w| w.eq_ignore_ascii_case(b"<html") || w.eq_ignore_ascii_case(b"<!doc"))?;
+        // Look for HTML tags after headers
+        let html_tag_start = body[header_end..]
+            .windows(5)
+            .position(|w| w.eq_ignore_ascii_case(b"<html") || w.eq_ignore_ascii_case(b"<!doc"))?;
 
-    Some(header_end + html_tag_start)
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        Some(header_end + html_tag_start)
+    }
 
     pub fn extract_and_sanitize(html: &str) -> String {
         let content_html = Self::extract_main_content(html);
 
         Self::sanitize_content(&content_html)
     }
-
-    
 
     fn extract_main_content(html: &str) -> String {
         let document = Html::parse_document(html);
