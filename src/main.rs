@@ -127,10 +127,11 @@ pub async fn main() -> Result<()> {
 
                             let html = &body[html_start..];
                             let html_content = String::from_utf8_lossy(&html);
-                            let file_name = format!("sub_sblog_{}.html", blog_count + 1);
-                            let pipeline = MetadataPipeline::new();
-                            
                             let file_html = html_content.to_string();
+                            let pipeline = MetadataPipeline::new();
+
+                            let blog_data=pipeline.run(html)
+                            
 
                             // match generate_embedding(text1, api_key, embedding_model).await {
                             //     Ok(embedding) => {
