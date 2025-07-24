@@ -8,14 +8,14 @@ mod tests {
     // Helper to create a test verifier
     fn setup_verifier() -> (FeedUrlValidator, tempfile::TempDir) {
         let dir = tempdir().unwrap();
-        let verifier = FeedUrlValidator::new(dir.path()).unwrap();
+        let verifier = FeedUrlValidator::new().unwrap();
         (verifier, dir) // Return both to keep tempdir alive
     }
 
     #[test]
     fn test_new_creates_partition() {
         let dir = tempdir().unwrap();
-        let mut verifier = FeedUrlValidator::new(dir.path()).unwrap();
+        let mut verifier = FeedUrlValidator::new().unwrap();
 
         // Verify partition exists by attempting to insert
         assert!(
