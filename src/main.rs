@@ -60,7 +60,6 @@ pub fn main ()-> Result<()> {
 
     let feed_url_validator=FeedUrlValidator::new()?;
     
-    let blog_processor = BlogProcessor::default();
 
 
 
@@ -75,7 +74,6 @@ pub fn main ()-> Result<()> {
     let mut blog_count = 0;
     const MAX_BLOGS: usize = 500;
 
-    let mut confirmed_blogs = 0;
 
 
     while let Some(record_result) = stream_iter.next_item() {
