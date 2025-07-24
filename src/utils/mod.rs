@@ -1,3 +1,4 @@
+pub mod analysis;
 pub mod embed;
 pub mod find_blog_url;
 pub mod find_feeds;

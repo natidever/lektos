@@ -2,11 +2,10 @@
 
 use std::env;
 
-use reqwest::Client;
-use serde::{Serialize, Deserialize};
 use anyhow::Result;
 use dotenv::dotenv;
-
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize)]
 struct EmbedContentPart {
@@ -22,7 +21,7 @@ struct EmbedContent {
 #[serde(rename_all = "camelCase")]
 pub struct EmbedRequest {
     pub model: String,
-     content: EmbedContent,
+    content: EmbedContent,
 }
 
 #[derive(Debug, Deserialize)]
@@ -35,17 +34,15 @@ pub struct EmbedResponse {
     pub embedding: Option<EmbeddingValues>,
 }
 
+pub async fn generate_embedding(text: &str, model_name: &str) -> Result<Vec<f32>> {
+    dotenv().ok();
 
-pub async fn generate_embedding(
-    text: String,
-    model_name: &str,
-) -> Result<Vec<f32>> {
-       dotenv().ok();
+    let api_key = env::var("GEMINI_API_KEY")?;
 
-  
-     let api_key =env::var("GEMINI_API_KEY")?;
-
-    println!("DEBUG: [embedding.rs] Starting generate_embedding for text: '{}'", text);
+    println!(
+        "DEBUG: [embedding.rs] Starting generate_embedding for text: '{}'",
+        text
+    );
 
     let api_url = format!(
         "https://generativelanguage.googleapis.com/v1beta/{}:embedContent",
@@ -59,13 +56,18 @@ pub async fn generate_embedding(
     let request_body = EmbedRequest {
         model: model_name.to_string(),
         content: EmbedContent {
-            parts: vec![EmbedContentPart { text: text.clone() }],
+            parts: vec![EmbedContentPart {
+                text: text.to_string(),
+            }],
         },
     };
-    println!("DEBUG: [embedding.rs] Request payload prepared: {:?}", request_body);
-    
+    println!(
+        "DEBUG: [embedding.rs] Request payload prepared: {:?}",
+        request_body
+    );
 
-    let response = client.post(&api_url)
+    let response = client
+        .post(&api_url)
         .header("Content-Type", "application/json")
         .header("x-goog-api-key", api_key)
         .json(&request_body)
@@ -77,23 +79,52 @@ pub async fn generate_embedding(
     let status = response.status();
     println!("DEBUG: [embedding.rs] HTTP Status Code: {}", status);
 
-   if status.is_success() {
-    let response_text = response.text().await?;
-    let response_body: EmbedResponse = serde_json::from_str(&response_text)?;
-    println!("DEBUG: [embedding.rs] Response body parsed successfully.");
+    if status.is_success() {
+        let response_text = response.text().await?;
+        let response_body: EmbedResponse = serde_json::from_str(&response_text)?;
+        println!("DEBUG: [embedding.rs] Response body parsed successfully.");
 
-    if let Some(embedding) = response_body.embedding {
-        println!("DEBUG: [embedding.rs] Embedding found in response.");
-        println!("  Embedding Values (first 5): {:?}", &embedding.values[0..5]);
-        println!("  Dimensionality: {}", embedding.values.len());
-        Ok(embedding.values)
+        if let Some(embedding) = response_body.embedding {
+            println!("DEBUG: [embedding.rs] Embedding found in response.");
+            println!(
+                "  Embedding Values (first 5): {:?}",
+                &embedding.values[0..5]
+            );
+            println!("  Dimensionality: {}", embedding.values.len());
+            Ok(embedding.values)
+        } else {
+            eprintln!(
+                "DEBUG: [embedding.rs] 'embedding' field was missing or null in the successful response."
+            );
+            anyhow::bail!(
+                "API response successful, but no embedding found. Full response: {}",
+                response_text
+            );
+        }
     } else {
-        eprintln!("DEBUG: [embedding.rs] 'embedding' field was missing or null in the successful response.");
-        anyhow::bail!("API response successful, but no embedding found. Full response: {}", response_text);
+        let error_text = response.text().await?;
+        eprintln!(
+            "Error: [embedding.rs] API request failed with status {}. Response: {}",
+            status, error_text
+        );
+        anyhow::bail!("API request failed: Status {} - {}", status, error_text);
     }
-} else {
-    let error_text = response.text().await?;
-    eprintln!("Error: [embedding.rs] API request failed with status {}. Response: {}", status, error_text);
-    anyhow::bail!("API request failed: Status {} - {}", status, error_text);
 }
+
+pub async fn handle_embedding(text: &str, model: &str) -> Result<Vec<f32>> {
+    match generate_embedding(text, model).await {
+        Ok(embedding) => {
+            println!(
+                " Successfully obtained embedding with dimensionality: {}",
+                embedding.len()
+            );
+
+            println!(
+                "🔍 First 5 values: {:?}",
+                &embedding[0..5.min(embedding.len())]
+            );
+            Ok(embedding)
+        }
+        Err(e) => Err(e.into()),
+    }
 }

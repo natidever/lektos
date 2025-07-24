@@ -1,49 +1,19 @@
-use anyhow::Error;
-use lektos::utils::find_feeds::extract_url;
-use lektos::utils::find_feeds::parse_feed;
-use lektos::utils::html_utils::BlogProcessor;
-use lektos::utils::url_visit_check;
-use lektos::utils::valid_url_from_feeds::FeedUrlValidator;
-// use warc::Record;
-use rayon::prelude::*;
-use reqwest::Response;
-use std::collections::HashMap;
-use std::collections::binary_heap;
-use std::fs;
-use std::fs::OpenOptions;
-use std::io;
-use std::io::BufRead;
-use std::ops::ControlFlow;
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering;
-use warc::BufferedBody;
-use warc::Record;
-use warc::StreamingBody;
-use warc::WarcHeader;
-use warc::WarcReader;
-
 use crate::extractors::pipeline::MetadataPipeline;
 use crate::models::blog::Blog;
-use crate::models::metadata;
-use crate::utils::embed::generate_embedding;
+use crate::utils::analysis::BlogLog;
+use crate::utils::analysis::log_blog_to_csv;
+use crate::utils::embed::handle_embedding;
 use crate::utils::find_blog_url::is_blog_url;
-// use crate::utils::find_blog_url::is_blog_url;
-use crate::utils::find_feeds::extract_feed;
-use crate::utils::find_feeds::is_feed;
 use crate::utils::url_visit_check::UrlVisitTracker;
-// use crate::utils::valid_url_from_feeds::is_url_from_feed;
-// use crate::utils::valid_url_from_feeds::store_valid_url_from_feed;
-// use crate::utils::valid_url_from_feeds::test_rock_db;
-
+use lektos::utils::html_utils::BlogProcessor;
+use lektos::utils::valid_url_from_feeds::FeedUrlValidator;
+use warc::WarcHeader;
+use warc::WarcReader;
 mod extractors;
 mod models;
 mod utils;
-use std::io::Write;
 
-// Import Embedding and Embeddings from the 'embed' module
 use anyhow::Result;
-
-use rayon::prelude::*;
 
 // Finds the start of HTML content in HTTP response
 
@@ -94,15 +64,42 @@ pub async fn main() -> Result<()> {
 
                     // Extract the actual HTML from the HTTP response
                     if let Some(html_start) = BlogProcessor::find_html_start(body) {
-                        let html = &body[html_start..];
-                        let html_content = String::from_utf8_lossy(&html);
-                        let file_name = format!("sub_sblog_{}.html", blog_count + 1);
-                        let pipeline = MetadataPipeline::new();
-                        let file_html = html_content.to_string();
                         blog_count += 1;
                         if blog_count >= MAX_BLOGS {
                             break;
                         }
+
+                        let html = &body[html_start..];
+                        let html_content = String::from_utf8_lossy(&html);
+                        let file_html = html_content.to_string();
+                        let pipeline = MetadataPipeline::new();
+                        let metadata = pipeline.run(file_html.as_str());
+                        let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_str());
+
+                        let mut blog = Blog {
+                            title: metadata.title.map(|f| f.value).unwrap_or("Untitled".into()),
+                            author: metadata.author.map(|f| f.value).unwrap_or("Unknown".into()),
+
+                            date: metadata.date.map(|f| f.value).unwrap_or("".into()),
+                            publisher: metadata.publisher.map(|f| f.value).unwrap_or_default(),
+                            content: blog_content,
+                        };
+                        
+                        let log = BlogLog {
+                            url: url,
+                            title: blog.title.clone(),
+                            author: blog.author.clone(),
+                            date: blog.date.clone(),
+                            publisher: blog.publisher.clone(),
+                            word_count: blog.content.split_whitespace().count(),
+                        };
+
+                        log_blog_to_csv(&log, "blog_log.csv")?;
+
+                        // let embedding_text = blog.to_embedding_text();
+
+                        // let embedding_model = "models/embedding-001";
+                        // let embeding_data=handle_embedding(&embedding_text, embedding_model).await?;
                     } else {
                         eprintln!("No HTML content found in record for URL: {}", url);
                         continue;
@@ -129,22 +126,27 @@ pub async fn main() -> Result<()> {
                             let html_content = String::from_utf8_lossy(&html);
                             let file_html = html_content.to_string();
                             let pipeline = MetadataPipeline::new();
+                            let metadata = pipeline.run(file_html.as_str());
+                            let blog_content =
+                                BlogProcessor::extract_and_sanitize(file_html.as_str());
 
-                            let blog_data=pipeline.run(html)
-                            
+                            let mut blog = Blog {
+                                title: metadata.title.map(|f| f.value).unwrap_or("Untitled".into()),
+                                author: metadata
+                                    .author
+                                    .map(|f| f.value)
+                                    .unwrap_or("Unknown".into()),
 
-                            // match generate_embedding(text1, api_key, embedding_model).await {
-                            //     Ok(embedding) => {
-                            //         println!(
-                            //             "Main: Successfully obtained embedding with dimensionality: {}",
-                            //             embedding.len()
-                            //         );
-                            //         println!("Main: First 5 values: {:?}", &embedding[0..5]);
-                            //     }
-                            //     Err(e) => {
-                            //         eprintln!("Main: Failed to get embedding for example 1: {}", e);
-                            //     }
-                            // }
+                                date: metadata.date.map(|f| f.value).unwrap_or("".into()),
+                                publisher: metadata.publisher.map(|f| f.value).unwrap_or_default(),
+                                content: blog_content,
+                            };
+
+                            let embedding_text = blog.to_embedding_text();
+
+                            let embedding_model = "models/embedding-001";
+                            let embeding_data =
+                                handle_embedding(&embedding_text, embedding_model).await?;
                         } else {
                             eprintln!("No HTML content found in record for URL: {}", url);
                             continue;
