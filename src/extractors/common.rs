@@ -26,6 +26,7 @@ impl CommonExtracor {
 
 impl MetadataExtractor for CommonExtracor {
     fn extract(&self, html: &str) -> ExtractionResult {
+        println!("CommonExtractor is Called");
         let mut extraction_result = ExtractionResult::default();
 
         let document = scraper::Html::parse_document(html);
