@@ -69,3 +69,5 @@ tarpaulin-report.html
 common_crawl_2025-26_warcfiles
 analysis.json
 tt.json
+raw.json
+*.json
