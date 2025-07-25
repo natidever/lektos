@@ -2,22 +2,18 @@ use scraper::Selector;
 
 use crate::models::metadata::{ExtractionResult, FieldResult, MetadataExtractor};
 
-
-
-
 const COMMON_SELECTOR_MAPPING: [(&str, &str); 5] = [
-     ("author", "author"),
+    ("author", "author"),
     ("title", "title"),
     ("description", "description"),
-   
     ("published_time", "date"),
     ("publisher", "publisher"),
 ];
-pub struct  CommonSelector;
+pub struct CommonExtracor;
 
-impl CommonSelector {
+impl CommonExtracor {
     pub fn new() -> Self {
-        CommonSelector
+        CommonExtracor
     }
 
     fn create_field_result(value: &str) -> FieldResult {
@@ -28,9 +24,8 @@ impl CommonSelector {
     }
 }
 
-impl MetadataExtractor for CommonSelector {
-
-fn extract(&self, html: &str) -> ExtractionResult {
+impl MetadataExtractor for CommonExtracor {
+    fn extract(&self, html: &str) -> ExtractionResult {
         let mut extraction_result = ExtractionResult::default();
 
         let document = scraper::Html::parse_document(html);

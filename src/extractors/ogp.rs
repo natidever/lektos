@@ -68,12 +68,6 @@ use crate::models::metadata::{ExtractionResult, FieldResult, MetadataExtractor};
 //     }
 // }
 
-
-
-
-
-
-
 const OGP_MAPPING: [(&str, &str); 5] = [
     ("og:title", "title"),
     ("og:description", "description"),
