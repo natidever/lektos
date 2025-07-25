@@ -22,7 +22,7 @@ pub struct BlogLog {
 }
 
 #[derive(Serialize, Deserialize)]
-struct BlogResult {
+pub struct BlogResult {
     title: bool,
     author: bool,
     content: bool,
@@ -40,6 +40,11 @@ impl Default for BlogResult {
     }
 }
 
+#[derive(Default)]
+pub struct FailedHTML{
+    pub html:String
+}
+
 pub fn log_blog_to_csv(log: &BlogLog, path: &str) -> Result<()> {
     println!("log_blog_to_csv called with log");
     let file = OpenOptions::new().append(true).create(true).open(path)?;
@@ -51,39 +56,13 @@ pub fn log_blog_to_csv(log: &BlogLog, path: &str) -> Result<()> {
     Ok(())
 }
 
-#[derive(Debug, Deserialize)]
-struct Data {
-    url: String,
-    html: String,
-}
 
-fn analyze() {
-    // reading from json getting the html
-    // reading the json
-    let urls = fs::read_to_string("src/analysis.json").expect("Unable to open html");
 
-    let value: Vec<Data> = serde_json::from_str(&urls).expect("msg");
 
-    // for dats in value {
-    //     let html = &body[html_start..];
-    //     let html_content = String::from_utf8_lossy(&html);
-    //     let file_html = html_content.to_string();
-    //     let pipeline = MetadataPipeline::new();
-    //     let metadata = pipeline.run(file_html.as_str());
-    //     let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_str());
 
-    //     let blog = Blog {
-    //         title: metadata.title.map(|f| f.value).unwrap_or("Untitled".into()),
-    //         author: metadata.author.map(|f| f.value).unwrap_or("Unknown".into()),
 
-    //         date: metadata.date.map(|f| f.value).unwrap_or("".into()),
-    //         publisher: metadata.publisher.map(|f| f.value).unwrap_or_default(),
-    //         content: blog_content,
-    //     };
-    // }
-}
 
-fn analyze_result(blog: &Blog) -> BlogResult {
+pub fn analyze_result(blog: &Blog) -> BlogResult {
     let mut blog_result = BlogResult::default();
     if blog.title != "Untitled" {
         blog_result.title = true;
@@ -102,4 +81,19 @@ fn analyze_result(blog: &Blog) -> BlogResult {
     }
 
     blog_result
+}
+
+pub fn segregate_failed_htmls(blog:&Blog,html:&str){
+
+    let mut failed_html = FailedHTML::default();
+
+    if blog.author  == "Unknown" {
+        let json_to_write = serde_json::to_string_pretty(html).expect("Failed to serialize");
+        fs::write("faiedl_htmls.json", json_to_write).expect("unable to write on file");
+        
+         
+
+    }
+
+
 }
