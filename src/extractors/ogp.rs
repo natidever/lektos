@@ -4,6 +4,38 @@ use scraper::Selector;
 
 use crate::models::metadata::{ExtractionResult, FieldResult, MetadataExtractor};
 
+pub struct CommonSelector;
+
+impl CommonSelector {
+
+ pub fn new() -> Self {
+        CommonSelector
+    }
+
+   fn create_field_result(value: &str) -> FieldResult {
+        FieldResult {
+            value: value.to_string(),
+            source: "common_selector".to_string(),
+        }
+    }
+
+    
+}
+
+impl  MetadataExtractor for CommonSelector  {
+    fn extract(&self, html: &str) -> ExtractionResult {
+        todo!()
+    }
+
+    fn priority(&self) -> u8 {
+        3
+    }
+
+    fn name(&self) -> &'static str {
+        "common_selector"
+    }
+}
+
 const OGP_MAPPING: [(&str, &str); 5] = [
     ("og:title", "title"),
     ("og:description", "description"),
