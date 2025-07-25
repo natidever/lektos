@@ -40,7 +40,7 @@ impl Default for BlogResult {
     }
 }
 
-#[derive(Default)]
+#[derive(Default,Serialize)]
 pub struct FailedHTML{
     pub html:String
 }
@@ -83,13 +83,18 @@ pub fn analyze_result(blog: &Blog) -> BlogResult {
     blog_result
 }
 
-pub fn segregate_failed_htmls(blog:&Blog,html:&str){
+pub fn segregate_failed_htmls(blog:&Blog,html:&str,temp:&mut Vec<FailedHTML> ){
 
-    let mut failed_html = FailedHTML::default();
 
     if blog.author  == "Unknown" {
-        let json_to_write = serde_json::to_string_pretty(html).expect("Failed to serialize");
-        fs::write("faiedl_htmls.json", json_to_write).expect("unable to write on file");
+
+    let  failed_html = FailedHTML{
+        html:html.to_string()
+    };
+
+
+         
+   temp.push(failed_html);
         
          
 
