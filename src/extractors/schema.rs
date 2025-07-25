@@ -16,7 +16,7 @@ const SCHEMA_MAPPING: [(&str, &str); 5] = [
 pub struct SchemaExtractor;
 
 fn get_author(object: Value) -> Option<String> {
-    println!("get_author called :",);
+    // println!("get_author called :",);
 
     match object.get("author") {
         Some(Value::Object(map)) => map
@@ -32,7 +32,7 @@ fn get_author(object: Value) -> Option<String> {
 
         Some(Value::String(s)) => Some(s.to_string()),
         _ => {
-            println!("No author found in object: {:?}", object);
+            // println!("No author found in object: {:?}", object);
             None
         }
     }
@@ -70,7 +70,7 @@ impl SchemaExtractor {
                 }
             }
         }
-        println!("Result after mapping: {:?}", result);
+        // println!("Result after mapping: {:?}", result);
 
         if let Some(author_name) = get_author(object_as_value) {
             result.insert("author".to_string(), author_name);
@@ -83,7 +83,7 @@ impl SchemaExtractor {
             }
         }
 
-        println!("result after publisher handling: {:?}", result);
+        // println!("result after publisher handling: {:?}", result);
 
         Some(result)
     }

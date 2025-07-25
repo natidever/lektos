@@ -10,3 +10,4 @@ bin:
   cargo run --bin main
 main:
   cargo run --bin lektos
+  

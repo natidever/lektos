@@ -21,14 +21,21 @@ pub fn parse_feed(content: &str) -> Result<feed_rs::model::Feed, Error> {
 }
 
 pub fn extract_url(content: &str) -> Result<Vec<String>, Error> {
-    let feed = parser::parse(content.as_bytes())?;
     let mut url = Vec::new();
 
-    for entry in feed.entries {
-        // println!("Blog post URL: {}", entry.id);
-        url.push(entry.id.clone());
+    match parser::parse(content.as_bytes()) {
+        Ok(feed) => {
+            for entry in feed.entries {
+                // println!("Blog post URL: {}", entry.id);
+                url.push(entry.id.clone());
+            }
+            Ok(url)
+        }
+        Err(e) => {
+            eprintln!("Failed Extracting Url : {}", e);
+            return Err(e.into());
+        }
     }
-    Ok(url)
 }
 
 pub fn extract_feed(
