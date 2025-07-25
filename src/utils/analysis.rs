@@ -21,28 +21,24 @@ pub struct BlogLog {
     pub word_count: usize,
 }
 
-#[derive(Serialize,Deserialize)]
-struct BlogResult{
-    title:bool,
-    author:bool,
-    content:bool,
-    publisher:bool,
-    
+#[derive(Serialize, Deserialize)]
+struct BlogResult {
+    title: bool,
+    author: bool,
+    content: bool,
+    publisher: bool,
 }
 
 impl Default for BlogResult {
-    
     fn default() -> Self {
-        Self{
-            title:false,
-            author:false,
-            content:false,
-            publisher:false
+        Self {
+            title: false,
+            author: false,
+            content: false,
+            publisher: false,
         }
     }
-    
 }
-
 
 pub fn log_blog_to_csv(log: &BlogLog, path: &str) -> Result<()> {
     println!("log_blog_to_csv called with log");
@@ -54,9 +50,6 @@ pub fn log_blog_to_csv(log: &BlogLog, path: &str) -> Result<()> {
     writer.flush()?;
     Ok(())
 }
-
-
-
 
 #[derive(Debug, Deserialize)]
 struct Data {
@@ -90,27 +83,23 @@ fn analyze() {
     // }
 }
 
-
-
-fn analyze_result(blog:&Blog)->BlogResult{
+fn analyze_result(blog: &Blog) -> BlogResult {
     let mut blog_result = BlogResult::default();
- if blog.title != "Untitled" {
-    blog_result.title = true;
-}
+    if blog.title != "Untitled" {
+        blog_result.title = true;
+    }
 
-if blog.author != "Unknown" {
-    blog_result.author = true;
-}
+    if blog.author != "Unknown" {
+        blog_result.author = true;
+    }
 
-if !blog.content.trim().is_empty() {
-    blog_result.content = true;
-}
+    if !blog.content.trim().is_empty() {
+        blog_result.content = true;
+    }
 
-if !blog.publisher.trim().is_empty() {
-    blog_result.publisher = true;
-}
+    if !blog.publisher.trim().is_empty() {
+        blog_result.publisher = true;
+    }
 
-blog_result
- 
-
+    blog_result
 }

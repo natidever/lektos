@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Debug, Default,Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct Blog {
     pub title: String,
     pub author: String,
