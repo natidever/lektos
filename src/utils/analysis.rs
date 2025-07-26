@@ -140,7 +140,7 @@ pub fn url_distribution(value: Vec<AnalysisData>) -> Vec<String> {
     let mut count = 0;
 
     let known_hosts = [
-        //  "medium.com",
+        "medium.com",
         "read.cv",
         "dev.to",
         "zeit.co",
@@ -168,12 +168,7 @@ pub fn url_distribution(value: Vec<AnalysisData>) -> Vec<String> {
         list_of_host.push(host.to_string());
 
         count += 1;
-
-        if count > 10 {
-            break;
-        }
     }
 
-    //  println!("Found {} duplicated url",duplicated_url);
     list_of_host
 }

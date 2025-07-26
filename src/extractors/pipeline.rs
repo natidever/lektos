@@ -1,4 +1,7 @@
-use crate::models::metadata::{FieldResult, MetadataExtractor, get_extractors};
+use crate::{
+    extractors,
+    models::metadata::{FieldResult, MetadataExtractor, get_extractors},
+};
 
 #[derive(Debug, Default)]
 pub struct Metadata {
@@ -45,4 +48,10 @@ impl MetadataPipeline {
             *target = new;
         }
     }
+}
+
+pub struct Total {
+    from_ogp: i32,
+    from_schema: i32,
+    from_common: i32,
 }
