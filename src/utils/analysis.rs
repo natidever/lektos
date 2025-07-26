@@ -14,8 +14,8 @@ use crate::utils::html_utils::BlogProcessor;
 
 #[derive(Debug, Deserialize)]
 pub struct AnalysisData {
-    url: String,
-    html: String,
+    pub url: String,
+    pub html: String,
 }
 
 #[derive(Serialize)]
