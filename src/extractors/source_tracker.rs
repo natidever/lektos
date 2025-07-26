@@ -1,6 +1,8 @@
+use serde::Serialize;
+
 use crate::{extractors::pipeline::Metadata, models::metadata::ExtractionResult};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default,Serialize)]
 pub struct SourceTracker {
     pub ogp_titles: u64,
     pub schema_titles: u64,
