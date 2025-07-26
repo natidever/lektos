@@ -1,26 +1,22 @@
 // how many blog site do we processsed how many of them are blog from how many we take out the structured data// src/analysis.rs
 use csv::WriterBuilder;
 use serde::{Deserialize, Serialize};
+use serde_json;
 use std::collections::HashSet;
+use std::fs;
 use std::fs::OpenOptions;
 use std::io::Result;
-use url::{Url, Host, Position};
-use serde_json;
-use std::fs;
-
+use url::{Host, Position, Url};
 
 use crate::extractors::pipeline::MetadataPipeline;
 use crate::models::blog::Blog;
 use crate::utils::html_utils::BlogProcessor;
-
 
 #[derive(Debug, Deserialize)]
 pub struct AnalysisData {
     url: String,
     html: String,
 }
-
-
 
 #[derive(Serialize)]
 pub struct BlogLog {
@@ -137,32 +133,47 @@ pub fn extract_valid_htmls() {
     );
 }
 
+pub fn url_distribution(value: Vec<AnalysisData>) -> Vec<String> {
+    let mut temp_check: Vec<String> = Vec::new();
+    let mut list_of_host: Vec<String> = Vec::new();
+    let mut duplicated_url = 0;
+    let mut count = 0;
 
-pub fn url_distribution(value:Vec<AnalysisData>)->Vec<String>{
+    let known_hosts = [
+        //  "medium.com",
+        "read.cv",
+        "dev.to",
+        "zeit.co",
+        "blogspot.com",
+        "ghost.io",
+        "substack.com",
+    ];
 
-let mut temp_check:Vec<String>=Vec::new();
-let mut list_of_host:Vec<String>=Vec::new();
-let mut  duplicated_url=0;
+    for data in value {
+        let parse_url = Url::parse(&data.url).expect("error parsing url");
 
- for data in value {
-    if temp_check.contains(&data.url){
-        duplicated_url+=1;
-        continue
+        let host = parse_url.host().expect("Failed to get host").to_string();
 
+        if known_hosts.iter().any(|kh| host.ends_with(kh)) {
+            continue;
+        }
+
+        // check visited
+        if temp_check.contains(&host) {
+            duplicated_url += 1;
+            continue;
+        }
+        temp_check.push(host.to_string());
+
+        list_of_host.push(host.to_string());
+
+        count += 1;
+
+        if count > 10 {
+            break;
+        }
     }
-    temp_check.push(data.url.to_string());
 
-    let parse_url = Url::parse(&data.url).expect("error parsing url");
-    
-    let host = parse_url.host().expect("Failed to get host").to_string();
-    list_of_host.push(data.url.to_string());
-
-
- };
- list_of_host
-     
-       
-    
-    
-
+    //  println!("Found {} duplicated url",duplicated_url);
+    list_of_host
 }
