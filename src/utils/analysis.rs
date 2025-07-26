@@ -8,9 +8,19 @@ use url::{Url, Host, Position};
 use serde_json;
 use std::fs;
 
+
 use crate::extractors::pipeline::MetadataPipeline;
 use crate::models::blog::Blog;
 use crate::utils::html_utils::BlogProcessor;
+
+
+#[derive(Debug, Deserialize)]
+pub struct AnalysisData {
+    url: String,
+    html: String,
+}
+
+
 
 #[derive(Serialize)]
 pub struct BlogLog {
@@ -128,14 +138,30 @@ pub fn extract_valid_htmls() {
 }
 
 
-pub fn url_distribution(host_list:&mut Vec<String>,url:&str){
+pub fn url_distribution(value:Vec<AnalysisData>)->Vec<String>{
+
+let mut temp_check:Vec<String>=Vec::new();
+let mut list_of_host:Vec<String>=Vec::new();
+let mut  duplicated_url=0;
+
+ for data in value {
+    if temp_check.contains(&data.url){
+        duplicated_url+=1;
+        continue
+
+    }
+    temp_check.push(data.url.to_string());
+
+    let parse_url = Url::parse(&data.url).expect("error parsing url");
+    
+    let host = parse_url.host().expect("Failed to get host").to_string();
+    list_of_host.push(data.url.to_string());
 
 
-       let parse_url = Url::parse(url).expect("failed to parse url");
-
-       let host =parse_url.host().expect("msg").to_string();
-
-       host_list.push(host);
+ };
+ list_of_host
+     
+       
     
     
 
