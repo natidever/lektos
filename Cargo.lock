@@ -1210,6 +1210,7 @@ dependencies = [
  "streaming-iterator",
  "tempfile",
  "tokio",
+ "url",
  "warc",
 ]
 

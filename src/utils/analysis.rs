@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::io::Result;
-
+use url::{Url, Host, Position};
 use serde_json;
 use std::fs;
 
@@ -125,4 +125,18 @@ pub fn extract_valid_htmls() {
         "valid_htmls.json created with {} entries",
         valid_htmls.len()
     );
+}
+
+
+pub fn url_distribution(host_list:&mut Vec<String>,url:&str){
+
+
+       let parse_url = Url::parse(url).expect("failed to parse url");
+
+       let host =parse_url.host().expect("msg").to_string();
+
+       host_list.push(host);
+    
+    
+
 }
