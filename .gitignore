@@ -1,5 +1,6 @@
 resource.warc.gz
 
+
 *.html 
 # Compiled files and target directory
 /target/
@@ -66,3 +67,7 @@ tarpaulin-report.html
 *.warc.*
 *.warc.*
 common_crawl_2025-26_warcfiles
+analysis.json
+tt.json
+raw.json
+*.json

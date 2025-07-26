@@ -1,8 +1,9 @@
-#[derive(Debug, Default)]
+use serde::Serialize;
+
+#[derive(Debug, Default, Serialize)]
 pub struct Blog {
     pub title: String,
     pub author: String,
-
     pub date: String,
     pub publisher: String,
     pub content: String,

@@ -1,6 +1,9 @@
 // src/embedding.rs
 
+use std::env;
+
 use anyhow::Result;
+use dotenv::dotenv;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
@@ -31,7 +34,11 @@ pub struct EmbedResponse {
     pub embedding: Option<EmbeddingValues>,
 }
 
-pub async fn generate_embedding(text: String, api_key: &str, model_name: &str) -> Result<Vec<f32>> {
+pub async fn generate_embedding(text: &str, model_name: &str) -> Result<Vec<f32>> {
+    dotenv().ok();
+
+    let api_key = env::var("GEMINI_API_KEY")?;
+
     println!(
         "DEBUG: [embedding.rs] Starting generate_embedding for text: '{}'",
         text
@@ -49,7 +56,9 @@ pub async fn generate_embedding(text: String, api_key: &str, model_name: &str) -
     let request_body = EmbedRequest {
         model: model_name.to_string(),
         content: EmbedContent {
-            parts: vec![EmbedContentPart { text: text.clone() }],
+            parts: vec![EmbedContentPart {
+                text: text.to_string(),
+            }],
         },
     };
     println!(
@@ -99,5 +108,23 @@ pub async fn generate_embedding(text: String, api_key: &str, model_name: &str) -
             status, error_text
         );
         anyhow::bail!("API request failed: Status {} - {}", status, error_text);
+    }
+}
+
+pub async fn handle_embedding(text: &str, model: &str) -> Result<Vec<f32>> {
+    match generate_embedding(text, model).await {
+        Ok(embedding) => {
+            println!(
+                " Successfully obtained embedding with dimensionality: {}",
+                embedding.len()
+            );
+
+            println!(
+                "🔍 First 5 values: {:?}",
+                &embedding[0..5.min(embedding.len())]
+            );
+            Ok(embedding)
+        }
+        Err(e) => Err(e.into()),
     }
 }

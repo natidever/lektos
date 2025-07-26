@@ -1,13 +1,12 @@
-
-use bloom::BloomFilter;
 use blake3::Hasher;
+use bloom::BloomFilter;
 
 use fjall::{Config, Keyspace, Partition, PartitionCreateOptions};
 use std::path::Path;
 
 // Persistent storage for visited URLs
 struct UrlStore {
-    partition: Partition,  // "visited_urls" partition
+    partition: Partition, // "visited_urls" partition
 }
 
 impl UrlStore {
@@ -15,24 +14,21 @@ impl UrlStore {
         let keyspace = Config::new(path)
             .open()
             .expect("Failed to open Fjall keyspace");
-        
+
         let partition = keyspace
             .open_partition("visited_urls", PartitionCreateOptions::default())
             .expect("Failed to create psartition");
-        
+
         Self { partition }
     }
 }
 
-
-
-
-pub struct UrlDeduplicator {
-  pub  bloom: BloomFilter,      // In-memory filter
- pub   store: UrlStore,         // Disk-backed store
+pub struct UrlVisitTracker {
+    pub bloom: BloomFilter, // In-memory filter
+    pub store: UrlStore,    // Disk-backed store
 }
 
-impl UrlDeduplicator {
+impl UrlVisitTracker {
     pub fn new() -> Self {
         Self {
             bloom: BloomFilter::with_rate(0.01, 1_000_000_000),
@@ -53,18 +49,18 @@ impl UrlDeduplicator {
     /// Core deduplication logic
     pub fn is_url_visited(&self, url: &str) -> bool {
         let hash = Self::hash_url(url);
-        let hash_bytes = &hash[..];  // Slice conversion
-        
+        let hash_bytes = &hash[..]; // Slice conversion
+
         // Step 1: Bloom filter check
         if !self.bloom.contains(&hash_bytes.to_vec()) {
             return false;
         }
-        
+
         // Step 2: Fjall disk check
         match self.store.partition.get(hash_bytes) {
-            Ok(Some(_)) => true,  
-            Ok(None) => false,      
-            Err(_) => false,       
+            Ok(Some(_)) => true,
+            Ok(None) => false,
+            Err(_) => false,
         }
     }
 
@@ -72,12 +68,13 @@ impl UrlDeduplicator {
     pub fn mark_visited(&mut self, url: &str) {
         let hash = Self::hash_url(url);
         let hash_bytes = &hash[..];
-        
+
         // Add to Bloom filter
         self.bloom.insert(&hash_bytes.to_vec());
-        
-       
-        self.store.partition.insert(hash_bytes, &[])
+
+        self.store
+            .partition
+            .insert(hash_bytes, &[])
             .expect("Fjall write failed");
     }
 }

@@ -1,21 +1,21 @@
 use anyhow::Error;
+use blake3::Hasher;
 use bloom::BloomFilter;
 use fjall::{Config, Partition, PartitionCreateOptions, PersistMode};
-use blake3::Hasher;
 use std::path::Path;
 
 // RSS URL verification system
-pub struct RssUrlVerifier {
-    bloom: BloomFilter,          // In-memory Bloom filter
-    partition: Partition,         // Fjall disk partition
+pub struct FeedUrlValidator {
+    bloom: BloomFilter,   // In-memory Bloom filter
+    partition: Partition, // Fjall disk partition
 }
 
-impl RssUrlVerifier {
+impl FeedUrlValidator {
     /// Initialize the RSS verifier with its own partition
-    pub fn new(db_path: &Path) -> Result<Self, Error> {
-        let keyspace = Config::new(db_path).open()?;
+    pub fn new() -> Result<Self, Error> {
+        let keyspace = Config::new(Path::new("src/db")).open()?;
         let partition = keyspace.open_partition("rss_urls", PartitionCreateOptions::default())?;
-        
+
         Ok(Self {
             bloom: BloomFilter::with_rate(0.01, 1_000_000_000),
             partition,

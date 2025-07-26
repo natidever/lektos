@@ -1,4 +1,4 @@
-use crate::extractors::{ogp::OgpExtractor, schema::SchemaExtractor};
+use crate::extractors::{common::CommonExtracor, ogp::OgpExtractor, schema::SchemaExtractor};
 
 pub trait MetadataExtractor: Send + Sync {
     fn extract(&self, html: &str) -> ExtractionResult;
@@ -21,7 +21,7 @@ pub struct FeedExtractionResult {
     pub description: String,
     pub date: String,
     // pub publisher: String,
-    pub url :String, // 0.0-1.0
+    pub url: String, // 0.0-1.0
 }
 
 #[derive(Debug)]
@@ -31,5 +31,9 @@ pub struct FieldResult {
 }
 
 pub fn get_extractors() -> Vec<Box<dyn MetadataExtractor>> {
-    vec![Box::new(OgpExtractor), Box::new(SchemaExtractor)]
+    vec![
+        Box::new(OgpExtractor),
+        Box::new(SchemaExtractor),
+        Box::new(CommonExtracor),
+    ]
 }
