@@ -1,3 +1,4 @@
+#![allow(unused)]
 use crate::extractors::pipeline::MetadataPipeline;
 use crate::models::blog::Blog;
 use crate::models::metadata::ExtractionResult;

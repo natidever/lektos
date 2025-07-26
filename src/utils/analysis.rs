@@ -40,9 +40,10 @@ impl Default for BlogResult {
     }
 }
 
-#[derive(Default,Serialize)]
-pub struct FailedHTML{
-    pub html:String
+#[derive(Default, Serialize)]
+pub struct FailedHTML {
+    pub url: String,
+    pub html: String,
 }
 
 pub fn log_blog_to_csv(log: &BlogLog, path: &str) -> Result<()> {
@@ -55,12 +56,6 @@ pub fn log_blog_to_csv(log: &BlogLog, path: &str) -> Result<()> {
     writer.flush()?;
     Ok(())
 }
-
-
-
-
-
-
 
 pub fn analyze_result(blog: &Blog) -> BlogResult {
     let mut blog_result = BlogResult::default();
@@ -83,22 +78,13 @@ pub fn analyze_result(blog: &Blog) -> BlogResult {
     blog_result
 }
 
-pub fn segregate_failed_htmls(blog:&Blog,html:&str,temp:&mut Vec<FailedHTML> ){
+pub fn segregate_failed_htmls(blog: &Blog, html: &str, temp: &mut Vec<FailedHTML>, url: &str) {
+    if blog.author == "Unknown" {
+        let failed_html = FailedHTML {
+            html: html.to_string(),
+            url: url.to_string(),
+        };
 
-
-    if blog.author  == "Unknown" {
-
-    let  failed_html = FailedHTML{
-        html:html.to_string()
-    };
-
-
-         
-   temp.push(failed_html);
-        
-         
-
+        temp.push(failed_html);
     }
-
-
 }
