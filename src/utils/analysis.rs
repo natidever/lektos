@@ -171,14 +171,70 @@ pub fn url_distribution(value: Vec<AnalysisData>) -> Vec<String> {
 
         count += 1;
 
-        if count > 10 {
-            break;
-        }
+        // if count > 10 {
+        //     break;
+        // }
     }
 
     //  println!("Found {} duplicated url",duplicated_url);
     list_of_host
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 fn limited_analysis_runner() {
