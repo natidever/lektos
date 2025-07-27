@@ -2,10 +2,13 @@
 
 use std::env;
 
+use anyhow::Context;
 use anyhow::Result;
 use dotenv::dotenv;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+
+use crate::{models::blog::Blog, utils::analysis::BlogResult};
 
 #[derive(Debug, Serialize)]
 struct EmbedContentPart {
@@ -39,19 +42,19 @@ pub async fn generate_embedding(text: &str, model_name: &str) -> Result<Vec<f32>
 
     let api_key = env::var("GEMINI_API_KEY")?;
 
-    println!(
-        "DEBUG: [embedding.rs] Starting generate_embedding for text: '{}'",
-        text
-    );
+    // println!(
+    //     "DEBUG: [embedding.rs] Starting generate_embedding for text: '{}'",
+    //     text
+    // );
 
     let api_url = format!(
         "https://generativelanguage.googleapis.com/v1beta/{}:embedContent",
         model_name
     );
-    println!("DEBUG: [embedding.rs] Target API URL: {}", api_url);
+    // println!("DEBUG: [embedding.rs] Target API URL: {}", api_url);
 
     let client = Client::new();
-    println!("DEBUG: [embedding.rs] reqwest client built.");
+    // println!("DEBUG: [embedding.rs] reqwest client built.");
 
     let request_body = EmbedRequest {
         model: model_name.to_string(),
@@ -61,10 +64,10 @@ pub async fn generate_embedding(text: &str, model_name: &str) -> Result<Vec<f32>
             }],
         },
     };
-    println!(
-        "DEBUG: [embedding.rs] Request payload prepared: {:?}",
-        request_body
-    );
+    // println!(
+    //     "DEBUG: [embedding.rs] Request payload prepared: {:?}",
+    //     request_body
+    // );
 
     let response = client
         .post(&api_url)
@@ -74,10 +77,10 @@ pub async fn generate_embedding(text: &str, model_name: &str) -> Result<Vec<f32>
         .send()
         .await?;
 
-    println!("DEBUG: [embedding.rs] Received HTTP response from API.");
+    // println!("DEBUG: [embedding.rs] Received HTTP response from API.");
 
     let status = response.status();
-    println!("DEBUG: [embedding.rs] HTTP Status Code: {}", status);
+    // println!("DEBUG: [embedding.rs] HTTP Status Code: {}", status);
 
     if status.is_success() {
         let response_text = response.text().await?;
@@ -85,11 +88,11 @@ pub async fn generate_embedding(text: &str, model_name: &str) -> Result<Vec<f32>
         println!("DEBUG: [embedding.rs] Response body parsed successfully.");
 
         if let Some(embedding) = response_body.embedding {
-            println!("DEBUG: [embedding.rs] Embedding found in response.");
-            println!(
-                "  Embedding Values (first 5): {:?}",
-                &embedding.values[0..5]
-            );
+            // println!("DEBUG: [embedding.rs] Embedding found in response.");
+            // println!(
+            //     "  Embedding Values (first 5): {:?}",
+            //     &embedding.values[0..5]
+            // );
             println!("  Dimensionality: {}", embedding.values.len());
             Ok(embedding.values)
         } else {
@@ -129,10 +132,6 @@ pub async fn handle_embedding(text: &str, model: &str) -> Result<Vec<f32>> {
     }
 }
 
-use anyhow::Context;
-
-use crate::{models::blog::Blog, utils::analysis::BlogResult};
-
 pub async fn generate_embeddings_batch(
     texts: Vec<String>,
     model_name: &str,
@@ -145,7 +144,7 @@ pub async fn generate_embeddings_batch(
         "https://generativelanguage.googleapis.com/v1beta/models/{}:batchEmbedContents",
         model_name
     );
-    let batch_size = 50;
+    let batch_size = 10;
     let mut all_embeddings = Vec::with_capacity(texts.len());
 
     for chunk in texts.chunks(batch_size) {
