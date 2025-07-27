@@ -7,6 +7,7 @@ use anyhow::Result;
 use dotenv::dotenv;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use crate::{models::blog::Blog, utils::analysis::BlogResult};
 
@@ -114,23 +115,23 @@ pub async fn generate_embedding(text: &str, model_name: &str) -> Result<Vec<f32>
     }
 }
 
-pub async fn handle_embedding(text: &str, model: &str) -> Result<Vec<f32>> {
-    match generate_embedding(text, model).await {
-        Ok(embedding) => {
-            println!(
-                " Successfully obtained embedding with dimensionality: {}",
-                embedding.len()
-            );
+// pub async fn handle_embedding(text: &str, model: &str) -> Result<Vec<f32>> {
+//     match generate_embedding(text, model).await {
+//         Ok(embedding) => {
+//             println!(
+//                 " Successfully obtained embedding with dimensionality: {}",
+//                 embedding.len()
+//             );
 
-            println!(
-                "🔍 First 5 values: {:?}",
-                &embedding[0..5.min(embedding.len())]
-            );
-            Ok(embedding)
-        }
-        Err(e) => Err(e.into()),
-    }
-}
+//             println!(
+//                 "🔍 First 5 values: {:?}",
+//                 &embedding[0..5.min(embedding.len())]
+//             );
+//             Ok(embedding)
+//         }
+//         Err(e) => Err(e.into()),
+//     }
+// }
 
 pub async fn generate_embeddings_batch(
     texts: Vec<String>,
@@ -141,10 +142,11 @@ pub async fn generate_embeddings_batch(
     let client = Client::new();
 
     let api_url = format!(
-        "https://generativelanguage.googleapis.com/v1beta/models/{}:batchEmbedContents",
-        
+        "https://generativelanguage.googleapis.com/v1beta/{}:embedContent",
         model_name
     );
+    // p
+
     let batch_size = 10;
     let mut all_embeddings = Vec::with_capacity(texts.len());
 
@@ -199,14 +201,27 @@ async fn execute_batch_request(
 
     let request_body = serde_json::json!({ "requests": requests });
 
+        let requests = texts
+        .iter()
+        .map(|text| {
+            json!({
+                "model": format!("models/{}", model_name),
+                "content": {
+                    "parts": [{"text": text}]
+                }
+            })
+        })
+        .collect::<Vec<_>>();
+
+    // Send array directly as root element
     let response = client
         .post(api_url)
         .header("Content-Type", "application/json")
         .header("x-goog-api-key", api_key)
-        .json(&request_body)
+        .json(&requests)  // Note: No wrapper object
         .send()
-        .await
-        .context("API request failed")?;
+        .await?;
+
 
     let status = response.status();
     if !status.is_success() {

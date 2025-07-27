@@ -5,7 +5,6 @@ use crate::models::metadata::ExtractionResult;
 use crate::models::metadata::FieldResult;
 use crate::utils::analysis::BlogLog;
 use crate::utils::analysis::log_blog_to_csv;
-use crate::utils::embed::handle_embedding;
 use crate::utils::find_blog_url::is_blog_url;
 use crate::utils::find_feeds::is_feed;
 use crate::utils::url_visit_check::UrlVisitTracker;
