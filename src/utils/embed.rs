@@ -11,6 +11,8 @@ use serde_json::json;
 
 use crate::{models::blog::Blog, utils::analysis::BlogResult};
 
+const EMBEDING_MODEL: &str = "models/embedding-001";
+
 #[derive(Debug, Serialize)]
 struct EmbedContentPart {
     text: String,
@@ -36,6 +38,11 @@ pub struct EmbeddingValues {
 #[derive(Debug, Deserialize)]
 pub struct EmbedResponse {
     pub embedding: Option<EmbeddingValues>,
+}
+pub struct EmbedingResult {
+    title: String,
+    embedding: Vec<f32>,
+    status: String,
 }
 
 pub async fn generate_embedding(text: &str, model_name: &str) -> Result<Vec<f32>> {
@@ -115,24 +122,6 @@ pub async fn generate_embedding(text: &str, model_name: &str) -> Result<Vec<f32>
     }
 }
 
-// pub async fn handle_embedding(text: &str, model: &str) -> Result<Vec<f32>> {
-//     match generate_embedding(text, model).await {
-//         Ok(embedding) => {
-//             println!(
-//                 " Successfully obtained embedding with dimensionality: {}",
-//                 embedding.len()
-//             );
-
-//             println!(
-//                 "🔍 First 5 values: {:?}",
-//                 &embedding[0..5.min(embedding.len())]
-//             );
-//             Ok(embedding)
-//         }
-//         Err(e) => Err(e.into()),
-//     }
-// }
-
 pub async fn generate_embeddings_batch(
     texts: Vec<String>,
     model_name: &str,
@@ -145,7 +134,6 @@ pub async fn generate_embeddings_batch(
         "https://generativelanguage.googleapis.com/v1beta/{}:embedContent",
         model_name
     );
-    // p
 
     let batch_size = 10;
     let mut all_embeddings = Vec::with_capacity(texts.len());
@@ -201,7 +189,7 @@ async fn execute_batch_request(
 
     let request_body = serde_json::json!({ "requests": requests });
 
-        let requests = texts
+    let requests = texts
         .iter()
         .map(|text| {
             json!({
@@ -218,10 +206,9 @@ async fn execute_batch_request(
         .post(api_url)
         .header("Content-Type", "application/json")
         .header("x-goog-api-key", api_key)
-        .json(&requests)  // Note: No wrapper object
+        .json(&requests) // Note: No wrapper object
         .send()
         .await?;
-
 
     let status = response.status();
     if !status.is_success() {
@@ -250,35 +237,72 @@ async fn execute_batch_request(
         .collect()
 }
 
-pub async fn process_blogs(blogs: Vec<Blog>, model_name: &str) -> Vec<EmbedingResult> {
-    let texts = blogs.iter().map(|blog| blog.to_embedding_text()).collect();
+//  pub async fn process_blogs(blogs: Vec<Blog>, model_name: &str) -> Vec<EmbedingResult> {
+//     let texts = blogs.iter().map(|blog| blog.to_embedding_text()).collect();
 
-    match generate_embeddings_batch(texts, model_name).await {
-        Ok(embeddings) => blogs
-            .into_iter()
-            .zip(embeddings)
-            .map(|(blog, embedding)| EmbedingResult {
-                title: blog.title,
-                embedding,
-                status: "success".to_string(),
-            })
-            .collect(),
-        Err(e) => {
-            eprintln!("Embedding failed: {}", e);
-            blogs
-                .into_iter()
-                .map(|blog| EmbedingResult {
-                    title: blog.title,
-                    embedding: Vec::new(),
-                    status: format!("failed: {}", e),
-                })
-                .collect()
+//     match generate_embeddings_batch(texts, model_name).await {
+//         Ok(embeddings) => blogs
+//             .into_iter()
+//             .zip(embeddings)
+//             .map(|(blog, embedding)| EmbedingResult {
+//                 title: blog.title,
+//                 embedding,
+//                 status: "success".to_string(),
+//             })
+//             .collect(),
+//         Err(e) => {
+//             eprintln!("Embedding failed: {}", e);
+//             blogs
+//                 .into_iter()
+//                 .map(|blog| EmbedingResult {
+//                     title: blog.title,
+//                     embedding: Vec::new(),
+//                     status: format!("failed: {}", e),
+//                 })
+//                 .collect()
+//         }
+//     }
+// }
+
+pub async fn process_blogs_embeding(blogs: Vec<Blog>) -> Vec<EmbedingResult> {
+    let batch_size = 50; // Adjust based on API limits
+    let mut results = Vec::new();
+
+    for chunk in blogs.chunks(batch_size) {
+        let texts = chunk
+            .iter()
+            .map(|blog| blog.to_embedding_text())
+            .collect::<Vec<_>>();
+
+        match generate_embeddings_batch(texts, EMBEDING_MODEL).await {
+            Ok(embeddings) => {
+                results.extend(chunk.iter().zip(embeddings).map(|(blog, embedding)| {
+                    EmbedingResult {
+                        title: blog.title.clone(),
+                        embedding,
+                        status: "success".to_string(),
+                    }
+                }));
+            }
+            Err(_) => {
+                // Fallback to individual processing
+                for blog in chunk {
+                    match generate_embedding(&blog.to_embedding_text(), EMBEDING_MODEL).await {
+                        Ok(embedding) => results.push(EmbedingResult {
+                            title: blog.title.clone(),
+                            embedding,
+                            status: "success (individual)".to_string(),
+                        }),
+                        Err(e) => results.push(EmbedingResult {
+                            title: blog.title.clone(),
+                            embedding: Vec::new(),
+                            status: format!("failed: {}", e),
+                        }),
+                    }
+                }
+            }
         }
     }
-}
 
-struct EmbedingResult {
-    title: String,
-    embedding: Vec<f32>,
-    status: String,
+    results
 }
