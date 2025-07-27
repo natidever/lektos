@@ -142,6 +142,7 @@ pub async fn generate_embeddings_batch(
 
     let api_url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/{}:batchEmbedContents",
+        
         model_name
     );
     let batch_size = 10;
