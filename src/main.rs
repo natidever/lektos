@@ -17,6 +17,7 @@ use warc::WarcReader;
 mod extractors;
 mod models;
 mod utils;
+mod error;
 
 use std::{env, fs};
 

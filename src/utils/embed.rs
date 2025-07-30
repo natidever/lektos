@@ -129,12 +129,27 @@ pub async fn embed_blog(blogs:Vec<String>) -> Result<(), Error> {
 
 // blog_embedding.add(blogss)
 
-pub async fn bactch_embeding(blogs:Vec<String>)->Result<(),Error>{
+pub async fn bactch_embeding(all_blogs:Vec<String>)->Result<(),Error>{
+
+const BATCH_SIZE: usize = 50; 
+
+ for blogs in all_blogs.chunks(BATCH_SIZE) {
+ 
+ }
+  
+  
 
 
-    for blog in blogs {}
 
 
+Ok(())
 
-    Ok(())
+
+    
+  
+
+
 }
+
+
+ 
