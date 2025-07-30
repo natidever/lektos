@@ -70,6 +70,7 @@ pub async fn embed_blog(blogs: &[String]) -> Result<Value> {
         .map(|blog| {
             json!({
                 "model": "models/gemini-embedding-001",
+                 "task_type":"SEMANTIC_SIMILARITY",
                 "content": {
                     "parts": [{
                         "text": blog
