@@ -8,6 +8,7 @@ pub enum Error {
     #[from]
     Reqwest(reqwest::Error),
 
+
     #[from]
     Io(std::io::Error), // as example
 }
