@@ -14,10 +14,10 @@ use lektos::utils::valid_url_from_feeds::FeedUrlValidator;
 use scraper::Selector;
 use warc::WarcHeader;
 use warc::WarcReader;
+mod errors;
 mod extractors;
 mod models;
 mod utils;
-mod error;
 
 use std::{env, fs};
 
