@@ -51,26 +51,59 @@ pub struct EmbedingResult {
     status: String,
 }
 
-pub async fn embed_blog() -> Result<(), Error> {
+pub async fn embed_blog(blogs:Vec<String>) -> Result<(), Error> {
     dotenv().ok();
 
     let api_key = env::var("GEMINI_API_KEY").expect("msg");
-    let embeding_url =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents";
+    let embeding_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents";
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     headers.insert(
         "x-goog-api-key",
         HeaderValue::from_str(&api_key).expect("Unable to find gemini keys"),
     );
-    let request_body = json!({
-        "model": "models/gemini-embedding-001",
-        "content": [
-            {"parts": [{"text": "What is the meaning of life?"}]},
-            {"parts": [{"text": "What is the purpose of existence?"}]},
-            {"parts": [{"text": "How do I bake a cake?"}]}
-        ]
-    });
+    
+    
+    let request_body =blogs.iter().map(|blog| {
+        json!({
+            "requests":[
+                {
+      "model": "models/gemini-embedding-001",
+      "content": {
+      "parts":[{
+        "text": blog}]}, }
+
+            ]
+            
+
+        })
+    }).collect::<Vec<_>>();
+
+
+//     let request_body = json!(
+//         {
+//         "requests":[
+//         {
+//       "model": "models/gemini-embedding-001",
+//       "content": {
+//       "parts":[{
+//         "text": "What is the meaning of life?"}
+//         ]
+//     } 
+// },
+
+//       {
+//       "model": "models/gemini-embedding-001",
+//       "content": {
+//       "parts":[{
+//         "text": "How much wood would a woodchuck chuck?"}]}, },
+//       {
+//       "model": "models/gemini-embedding-001",
+//       "content": {
+//       "parts":[{
+//         "text": "How does the brain work?"}]}, }, ]
+//     }
+// );
 
     let client = Client::new();
     let response = client
@@ -89,6 +122,19 @@ pub async fn embed_blog() -> Result<(), Error> {
 
         println!("Embedded Successfully:{}", error_body);
     }
+
+    Ok(())
+}
+
+
+// blog_embedding.add(blogss)
+
+pub async fn bactch_embeding(blogs:Vec<String>)->Result<(),Error>{
+
+
+    for blog in blogs {}
+
+
 
     Ok(())
 }
