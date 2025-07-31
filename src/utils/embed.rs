@@ -3,10 +3,10 @@
 use std::env;
 
 // use anyhow::Context;
-// use anyhow::Error;
+use anyhow::Error;
 // use anyhow::Ok;
-// use anyhow::Result;
-use crate::errors::{Error, Result};
+use anyhow::Result;
+// use crate::errors::{Error, Result};
 // use anyhow::Ok;
 use dotenv::dotenv;
 use reqwest::Client;
@@ -89,29 +89,79 @@ pub async fn embed_blog(blogs: &[String]) -> Result<Value> {
         .send()
         .await?;
 
-    println!("response :{:?}", response);
+    // println!("response :{:?}", response);
 
     if response.status().is_success() {
         let response_body = response.json::<Value>().await?;
 
         // println!("Embedded Successfully:{}", response_body);
+        
+        // let values = response.json::serde_json<>
+        let embeddings = response_body["embeddings"].as_array().unwrap();
+
+            // Process each embedding in the batch
+    let mut results = Vec::with_capacity(embeddings.len());
+    for embedding in embeddings {
+
+        if let Some(values)=embedding["values"].as_array(){
+
+        let mut vec = Vec::with_capacity(values.len());
+        for value in values {
+            // vec.push(value.as_f64().context("Invalid embedding value")? as f32) ;
+            let val = value.as_f64()
+        .ok_or_else(|| anyhow::anyhow!("Invalid embedding value: {:?}", value))?;
+    vec.push(val as f32);
+
+            // vec.push(value);
+
+
+        }
+        results.push(vec);
+
+        }
+
+
+        // println!("values:{:?}",results)
+        for (i, embedding) in results.iter().take(3).enumerate() {
+    println!("Embedding {} ({} dims): {:?}", 
+        i, 
+        embedding.len(),
+        &embedding[..embedding.len().min(5)]  // First 5 elements
+    );
+}
+
+
+
+
+
+
+    }
+     
+     
+    
+
 
         return Ok(response_body);
     } else {
         let error_body = response.text().await?;
+        return Err(Error::msg("message"))
 
-        return Err(Error::EmbeddingService(error_body));
+        // return Err(Error::EmbeddingService(error_body));
     }
 }
 
 pub async fn bactch_embeding(all_blogs: Vec<String>) -> Result<()> {
-    const BATCH_SIZE: usize = 50;
+    const BATCH_SIZE: usize = 1;
     let mut count = 1;
 
     for blogs in all_blogs.chunks(BATCH_SIZE) {
         println!("{} Batch", count);
         count += 1;
         embed_blog(blogs).await?;
+        // get the result
+        
+
+        // store it to qdrant
     }
 
     Ok(())

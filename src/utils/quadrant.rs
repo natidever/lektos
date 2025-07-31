@@ -24,19 +24,21 @@ pub async fn quadrant_check() {
 }
 
 
-pub async fn create_collection(quadrant_api_key:&str,quadrant_url:&str)->Result<()>{
+pub async fn create_collection()->Result<()>{
             dotenv().ok();
+  let quadrant_api_key=env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
+  let quadrant_url=env::var("QUADRANT_URL").expect("failed to load qdt url");
 
 
-  let client = Qdrant::from_url(quadrant_url)
+  let client = Qdrant::from_url(&quadrant_url)
       .api_key(quadrant_api_key)
       .build()
       .unwrap();
 
 let collection=client
     .create_collection(
-        CreateCollectionBuilder::new("{lektos}")
-            .vectors_config(VectorParamsBuilder::new(100, Distance::Cosine)),
+        CreateCollectionBuilder::new("blogs")
+            .vectors_config(VectorParamsBuilder::new(768, Distance::Cosine)),
     )
     .await?;
 
