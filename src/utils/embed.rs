@@ -9,6 +9,7 @@ use anyhow::Result;
 // use crate::errors::{Error, Result};
 // use anyhow::Ok;
 use dotenv::dotenv;
+use qdrant_client::qdrant::qdrant_client::QdrantClient;
 use reqwest::Client;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::header::HeaderMap;
@@ -16,6 +17,8 @@ use reqwest::header::HeaderValue;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_json::json;
+    use qdrant_client::qdrant::{PointStruct, UpsertPointsBuilder};
+
 
 use crate::{models::blog::Blog, utils::analysis::BlogResult};
 
@@ -53,7 +56,7 @@ pub struct EmbedingResult {
     status: String,
 }
 
-pub async fn embed_blog(blogs: &[String]) -> Result<Value> {
+pub async fn embed_blog(blogs: &[String]) -> Result<Vec<Vec<f32>>> {
     dotenv().ok();
 
     let api_key = env::var("GEMINI_API_KEY").expect("msg");
@@ -123,7 +126,7 @@ pub async fn embed_blog(blogs: &[String]) -> Result<Value> {
 
         // println!("values:{:?}",results)
         for (i, embedding) in results.iter().take(3).enumerate() {
-    println!("Embedding {} ({} dims): {:?}", 
+          println!("Embedding {} ({} dims): {:?}", 
         i, 
         embedding.len(),
         &embedding[..embedding.len().min(5)]  // First 5 elements
@@ -141,7 +144,7 @@ pub async fn embed_blog(blogs: &[String]) -> Result<Value> {
     
 
 
-        return Ok(response_body);
+        return Ok(results);
     } else {
         let error_body = response.text().await?;
         return Err(Error::msg("message"))
@@ -157,7 +160,7 @@ pub async fn bactch_embeding(all_blogs: Vec<String>) -> Result<()> {
     for blogs in all_blogs.chunks(BATCH_SIZE) {
         println!("{} Batch", count);
         count += 1;
-        embed_blog(blogs).await?;
+        let result = embed_blog(blogs).await?;
         // get the result
         
 
@@ -166,4 +169,33 @@ pub async fn bactch_embeding(all_blogs: Vec<String>) -> Result<()> {
 
     Ok(())
     //
+}
+
+
+const COLLECTION_NAME: &str = "blogs";
+pub async fn store_embeddings(
+    client: &QdrantClient,
+    blogs: &[String],
+    embeddings: Vec<Vec<f32>>,
+) -> Result<()> {
+    // Prepare points (1:1 mapping of blogs to embeddings)
+    let points: Vec<_> = blogs
+        .iter()
+        .zip(embeddings)
+        .enumerate()
+        .map(|(id, (blog, vector))| {
+            PointStruct::new(
+                id as u64,  // Simple sequential ID
+                vector,
+                serde_json::json!({ "content": blog }).try_into().unwrap(),
+            )
+        })
+        .collect();
+
+    // Upsert in single batch
+    client
+        .upsert_points(COLLECTION_NAME, points, None)
+        .await?;
+
+    Ok(())
 }
