@@ -172,30 +172,30 @@ pub async fn bactch_embeding(all_blogs: Vec<String>) -> Result<()> {
 }
 
 
-const COLLECTION_NAME: &str = "blogs";
-pub async fn store_embeddings(
-    client: &QdrantClient,
-    blogs: &[String],
-    embeddings: Vec<Vec<f32>>,
-) -> Result<()> {
-    // Prepare points (1:1 mapping of blogs to embeddings)
-    let points: Vec<_> = blogs
-        .iter()
-        .zip(embeddings)
-        .enumerate()
-        .map(|(id, (blog, vector))| {
-            PointStruct::new(
-                id as u64,  // Simple sequential ID
-                vector,
-                serde_json::json!({ "content": blog }).try_into().unwrap(),
-            )
-        })
-        .collect();
+// const COLLECTION_NAME: &str = "blogs";
+// pub async fn store_embeddings(
+//     client: &QdrantClient,
+//     // blogs: &[String],
+//     embeddings: Vec<Vec<f32>>,
+// ) -> Result<()> {
+//     // Prepare points (1:1 mapping of blogs to embeddings)
+//     let points: Vec<_> = blogs
+//         .iter()
+//         .zip(embeddings)
+//         .enumerate()
+//         .map(|(id, (blog, vector))| {
+//             PointStruct::new(
+//                 id as u64,  // Simple sequential ID
+//                 vector,
+//                 serde_json::json!({ "content": blog }).try_into().unwrap(),
+//             )
+//         })
+//         .collect();
 
-    // Upsert in single batch
-    client
-        .upsert_points(COLLECTION_NAME, points, None)
-        .await?;
+//     // Upsert in single batch
+//     // client
+//     //     .upsert_points(COLLECTION_NAME, points, None)
+//     //     .await?;
 
-    Ok(())
-}
+//     Ok(())
+// }
