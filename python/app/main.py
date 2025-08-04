@@ -15,8 +15,10 @@ def main():
 </html>
 """
     pipeline = MetadataPipeline()
-    result =pipeline.run(html_content)
-    
+    extracted =pipeline.run(html_content)
+    print(extracted.title.value if extracted.title else "Unkown")
+
+
   
 
 

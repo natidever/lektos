@@ -5,10 +5,15 @@ use pyo3::prelude::*;
 #[pyclass]
 
 pub struct Metadata {
+    #[pyo3(get)]
     pub title: Option<FieldResult>,
+    #[pyo3(get)]
     pub author: Option<FieldResult>,
+    #[pyo3(get)]
     pub date: Option<FieldResult>,
+    #[pyo3(get)]
     pub publisher: Option<FieldResult>,
+    #[pyo3(get)]
     pub description: Option<FieldResult>,
 }
 

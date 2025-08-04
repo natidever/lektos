@@ -8,12 +8,19 @@ pub trait MetadataExtractor: Send + Sync {
     fn name(&self) -> &'static str;
 }
 #[derive(Debug, Default)]
+#[pyclass]
 pub struct ExtractionResult {
+    #[pyo3(get)]
     pub title: Option<FieldResult>,
+    #[pyo3(get)]
     pub author: Option<FieldResult>,
+    #[pyo3(get)]
     pub description: Option<FieldResult>,
+    #[pyo3(get)]
     pub date: Option<FieldResult>,
+    #[pyo3(get)]
     pub publisher: Option<FieldResult>,
+    #[pyo3(get)]
     pub confidence: f32, // 0.0-1.0
 }
 
