@@ -1,5 +1,5 @@
-use std::env;
 use dotenv::dotenv;
+use std::env;
 
 use qdrant_client::Qdrant;
 use qdrant_client::qdrant::{CreateCollectionBuilder, Distance, VectorParamsBuilder};
@@ -8,39 +8,36 @@ use qdrant_client::qdrant::{CreateCollectionBuilder, Distance, VectorParamsBuild
 use anyhow::Result;
 
 pub async fn quadrant_check() {
+    dotenv().ok();
 
-        dotenv().ok();
+    let quadrant_api = env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
+    let quadrant_url = env::var("QUADRANT_URL").expect("failed to load qdt url");
 
-  let quadrant_api=env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
-  let quadrant_url=env::var("QUADRANT_URL").expect("failed to load qdt url");
+    let client = Qdrant::from_url(&quadrant_url)
+        .api_key(quadrant_api)
+        .build()
+        .unwrap();
 
-  let client = Qdrant::from_url(&quadrant_url)
-      .api_key(quadrant_api)
-      .build()
-      .unwrap();
-      
-  let collections_list = client.list_collections().await;
-  let _ = dbg!(collections_list);
+    let collections_list = client.list_collections().await;
+    let _ = dbg!(collections_list);
 }
 
+pub async fn create_collection() -> Result<()> {
+    dotenv().ok();
+    let quadrant_api_key = env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
+    let quadrant_url = env::var("QUADRANT_URL").expect("failed to load qdt url");
 
-pub async fn create_collection()->Result<()>{
-            dotenv().ok();
-  let quadrant_api_key=env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
-  let quadrant_url=env::var("QUADRANT_URL").expect("failed to load qdt url");
+    let client = Qdrant::from_url(&quadrant_url)
+        .api_key(quadrant_api_key)
+        .build()
+        .unwrap();
 
-
-  let client = Qdrant::from_url(&quadrant_url)
-      .api_key(quadrant_api_key)
-      .build()
-      .unwrap();
-
-let collection=client
-    .create_collection(
-        CreateCollectionBuilder::new("blogs")
-            .vectors_config(VectorParamsBuilder::new(768, Distance::Cosine)),
-    )
-    .await?;
+    let collection = client
+        .create_collection(
+            CreateCollectionBuilder::new("blogs")
+                .vectors_config(VectorParamsBuilder::new(768, Distance::Cosine)),
+        )
+        .await?;
 
     let _ = dbg!(collection);
 

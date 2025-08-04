@@ -10,6 +10,7 @@ use anyhow::Result;
 // use anyhow::Ok;
 use dotenv::dotenv;
 use qdrant_client::qdrant::qdrant_client::QdrantClient;
+use qdrant_client::qdrant::{PointStruct, UpsertPointsBuilder};
 use reqwest::Client;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::header::HeaderMap;
@@ -17,8 +18,6 @@ use reqwest::header::HeaderValue;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_json::json;
-    use qdrant_client::qdrant::{PointStruct, UpsertPointsBuilder};
-
 
 use crate::{models::blog::Blog, utils::analysis::BlogResult};
 
@@ -98,56 +97,42 @@ pub async fn embed_blog(blogs: &[String]) -> Result<Vec<Vec<f32>>> {
         let response_body = response.json::<Value>().await?;
 
         // println!("Embedded Successfully:{}", response_body);
-        
+
         // let values = response.json::serde_json<>
         let embeddings = response_body["embeddings"].as_array().unwrap();
 
-            // Process each embedding in the batch
-    let mut results = Vec::with_capacity(embeddings.len());
-    for embedding in embeddings {
+        // Process each embedding in the batch
+        let mut results = Vec::with_capacity(embeddings.len());
+        for embedding in embeddings {
+            if let Some(values) = embedding["values"].as_array() {
+                let mut vec = Vec::with_capacity(values.len());
+                for value in values {
+                    // vec.push(value.as_f64().context("Invalid embedding value")? as f32) ;
+                    let val = value
+                        .as_f64()
+                        .ok_or_else(|| anyhow::anyhow!("Invalid embedding value: {:?}", value))?;
+                    vec.push(val as f32);
 
-        if let Some(values)=embedding["values"].as_array(){
+                    // vec.push(value);
+                }
+                results.push(vec);
+            }
 
-        let mut vec = Vec::with_capacity(values.len());
-        for value in values {
-            // vec.push(value.as_f64().context("Invalid embedding value")? as f32) ;
-            let val = value.as_f64()
-        .ok_or_else(|| anyhow::anyhow!("Invalid embedding value: {:?}", value))?;
-    vec.push(val as f32);
-
-            // vec.push(value);
-
-
+            // println!("values:{:?}",results)
+            for (i, embedding) in results.iter().take(3).enumerate() {
+                println!(
+                    "Embedding {} ({} dims): {:?}",
+                    i,
+                    embedding.len(),
+                    &embedding[..embedding.len().min(5)] // First 5 elements
+                );
+            }
         }
-        results.push(vec);
-
-        }
-
-
-        // println!("values:{:?}",results)
-        for (i, embedding) in results.iter().take(3).enumerate() {
-          println!("Embedding {} ({} dims): {:?}", 
-        i, 
-        embedding.len(),
-        &embedding[..embedding.len().min(5)]  // First 5 elements
-    );
-}
-
-
-
-
-
-
-    }
-     
-     
-    
-
 
         return Ok(results);
     } else {
         let error_body = response.text().await?;
-        return Err(Error::msg("message"))
+        return Err(Error::msg("message"));
 
         // return Err(Error::EmbeddingService(error_body));
     }
@@ -162,7 +147,6 @@ pub async fn bactch_embeding(all_blogs: Vec<String>) -> Result<()> {
         count += 1;
         let result = embed_blog(blogs).await?;
         // get the result
-        
 
         // store it to qdrant
     }
@@ -171,31 +155,30 @@ pub async fn bactch_embeding(all_blogs: Vec<String>) -> Result<()> {
     //
 }
 
+// const COLLECTION_NAME: &str = "blogs";
+// pub async fn store_embeddings(
+//     client: &QdrantClient,
+//     // blogs: &[String],
+//     embeddings: Vec<Vec<f32>>,
+// ) -> Result<()> {
+//     // Prepare points (1:1 mapping of blogs to embeddings)
+//     let points: Vec<_> = blogs
+//         .iter()
+//         .zip(embeddings)
+//         .enumerate()
+//         .map(|(id, (blog, vector))| {
+//             PointStruct::new(
+//                 id as u64,  // Simple sequential ID
+//                 vector,
+//                 serde_json::json!({ "content": blog }).try_into().unwrap(),
+//             )
+//         })
+//         .collect();
 
-const COLLECTION_NAME: &str = "blogs";
-pub async fn store_embeddings(
-    client: &QdrantClient,
-    blogs: &[String],
-    embeddings: Vec<Vec<f32>>,
-) -> Result<()> {
-    // Prepare points (1:1 mapping of blogs to embeddings)
-    let points: Vec<_> = blogs
-        .iter()
-        .zip(embeddings)
-        .enumerate()
-        .map(|(id, (blog, vector))| {
-            PointStruct::new(
-                id as u64,  // Simple sequential ID
-                vector,
-                serde_json::json!({ "content": blog }).try_into().unwrap(),
-            )
-        })
-        .collect();
+//     // Upsert in single batch
+//     // client
+//     //     .upsert_points(COLLECTION_NAME, points, None)
+//     //     .await?;
 
-    // Upsert in single batch
-    client
-        .upsert_points(COLLECTION_NAME, points, None)
-        .await?;
-
-    Ok(())
-}
+//     Ok(())
+// }

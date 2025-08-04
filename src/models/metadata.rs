@@ -1,3 +1,5 @@
+use pyo3::prelude::*;
+
 use crate::extractors::{common::CommonExtracor, ogp::OgpExtractor, schema::SchemaExtractor};
 
 pub trait MetadataExtractor: Send + Sync {
@@ -6,12 +8,19 @@ pub trait MetadataExtractor: Send + Sync {
     fn name(&self) -> &'static str;
 }
 #[derive(Debug, Default)]
+#[pyclass]
 pub struct ExtractionResult {
+    #[pyo3(get)]
     pub title: Option<FieldResult>,
+    #[pyo3(get)]
     pub author: Option<FieldResult>,
+    #[pyo3(get)]
     pub description: Option<FieldResult>,
+    #[pyo3(get)]
     pub date: Option<FieldResult>,
+    #[pyo3(get)]
     pub publisher: Option<FieldResult>,
+    #[pyo3(get)]
     pub confidence: f32, // 0.0-1.0
 }
 
@@ -24,9 +33,12 @@ pub struct FeedExtractionResult {
     pub url: String, // 0.0-1.0
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[pyclass]
 pub struct FieldResult {
+    #[pyo3(get)]
     pub value: String,
+    #[pyo3(get)]
     pub source: String, // 0.0-1.0
 }
 

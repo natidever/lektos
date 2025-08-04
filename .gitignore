@@ -51,6 +51,8 @@ dist/
 # Environment variables or secrets
 .env
 .env.*
+.venv
+
 
 # Coverage or test outputs
 coverage/
