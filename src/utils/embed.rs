@@ -1,6 +1,7 @@
 // src/embedding.rs
 
 use std::env;
+use std::time::Duration;
 
 // use anyhow::Context;
 use anyhow::Error;
@@ -23,42 +24,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_json::json;
 use std::collections::HashMap;
+use sha2::{ Sha256,Digest};
 
 use crate::{models::blog::Blog, utils::analysis::BlogResult};
 
 const EMBEDING_MODEL: &str = "models/embedding-001";
-
-#[derive(Debug, Serialize)]
-struct EmbedContentPart {
-    text: String,
-}
-
-#[derive(Debug, Serialize)]
-struct EmbedContent {
-    parts: Vec<EmbedContentPart>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EmbedRequest {
-    pub model: String,
-    content: EmbedContent,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct EmbeddingValues {
-    pub values: Vec<f32>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct EmbedResponse {
-    pub embedding: Option<EmbeddingValues>,
-}
-pub struct EmbedingResult {
-    title: String,
-    embedding: Vec<f32>,
-    status: String,
-}
 
 pub struct DbMetadata {
     pub title: String,
@@ -120,13 +90,10 @@ pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
             if let Some(values) = embedding["values"].as_array() {
                 let mut vec = Vec::with_capacity(values.len());
                 for value in values {
-                    // vec.push(value.as_f64().context("Invalid embedding value")? as f32) ;
                     let val = value
                         .as_f64()
                         .ok_or_else(|| anyhow::anyhow!("Invalid embedding value: {:?}", value))?;
                     vec.push(val as f32);
-
-                    // vec.push(value);
                 }
                 results.push(vec);
             }
@@ -136,7 +103,7 @@ pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
                     "Embedding {} ({} dims): {:?}",
                     i,
                     embedding.len(),
-                    &embedding[..embedding.len().min(5)] // First 5 elements
+                    &embedding[..embedding.len().min(5)]
                 );
             }
         }
@@ -145,8 +112,6 @@ pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
     } else {
         let error_body = response.text().await?;
         return Err(Error::msg(error_body));
-
-        // return Err(Error::EmbeddingService(error_body));
     }
 }
 
@@ -181,6 +146,8 @@ pub async fn bactch_embeding(all_blogs: &Vec<QdrantdbObject>) -> Result<()> {
             .unwrap();
 
         insert_to_qdrant(&client, points).await?;
+
+        tokio::time::sleep(Duration::from_millis(20000)).await
     }
 
     Ok(())
@@ -206,4 +173,10 @@ async fn insert_to_qdrant(client: &Qdrant, points: Vec<PointStruct>) -> anyhow::
     println!("QD_UPSERTING_RESULT:{:?}", result);
 
     Ok(())
+}
+
+pub fn generate_content_id(blog_content: &String) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(blog_content);
+    format!("{:x}", hasher.finalize())
 }
