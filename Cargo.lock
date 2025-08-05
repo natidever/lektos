@@ -1371,6 +1371,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "url",
+ "uuid 1.17.0",
  "warc",
 ]
 

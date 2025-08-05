@@ -9,10 +9,12 @@ use anyhow::Result;
 // use crate::errors::{Error, Result};
 // use anyhow::Ok;
 use dotenv::dotenv;
-use qdrant_client::qdrant::qdrant_client::QdrantClient;
-use qdrant_client::qdrant::Vectors;
-use qdrant_client::qdrant::{PointStruct, UpsertPointsBuilder};
 use qdrant_client::Qdrant;
+use qdrant_client::qdrant::PointsSelector;
+use qdrant_client::qdrant::Vectors;
+use qdrant_client::qdrant::qdrant_client::QdrantClient;
+use qdrant_client::qdrant::{PointStruct, UpsertPointsBuilder};
+use qdrant_client::qdrant::{Value as QdrantValue, Vector};
 use reqwest::Client;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::header::HeaderMap;
@@ -20,6 +22,7 @@ use reqwest::header::HeaderValue;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_json::json;
+use std::collections::HashMap;
 
 use crate::{models::blog::Blog, utils::analysis::BlogResult};
 
@@ -62,22 +65,18 @@ pub struct DbMetadata {
     pub author: String,
     pub date: String,
     pub publisher: String,
-    pub description: String,
 }
-
 
 pub struct QdrantdbObject {
-    id:u64,
-    metadata:DbMetadata,
-    content:String
+    pub id: String,
+    pub metadata: DbMetadata,
+    pub content: String,
 }
 
-
-
-pub async fn embed_blog(blogs:Vec<&str>) -> Result<Vec<Vec<f32>>> {
+pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
     dotenv().ok();
 
-    let api_key = env::var("GEMINI_API_KEY").expect("msg");
+    let api_key = env::var("GEMINI_API_KEY").expect("failed to get env ");
     let embeding_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents";
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
@@ -90,7 +89,7 @@ pub async fn embed_blog(blogs:Vec<&str>) -> Result<Vec<Vec<f32>>> {
         .iter()
         .map(|blog| {
             json!({
-                "model": "models/gemini-embedding-001",
+                "model": "models/text-embedding-005",
                  "task_type":"SEMANTIC_SIMILARITY",
                 "content": {
                     "parts": [{
@@ -110,14 +109,9 @@ pub async fn embed_blog(blogs:Vec<&str>) -> Result<Vec<Vec<f32>>> {
         .send()
         .await?;
 
-    // println!("response :{:?}", response);
-
     if response.status().is_success() {
         let response_body = response.json::<Value>().await?;
 
-        // println!("Embedded Successfully:{}", response_body);
-
-        // let values = response.json::serde_json<>
         let embeddings = response_body["embeddings"].as_array().unwrap();
 
         // Process each embedding in the batch
@@ -137,7 +131,6 @@ pub async fn embed_blog(blogs:Vec<&str>) -> Result<Vec<Vec<f32>>> {
                 results.push(vec);
             }
 
-            // println!("values:{:?}",results)
             for (i, embedding) in results.iter().take(3).enumerate() {
                 println!(
                     "Embedding {} ({} dims): {:?}",
@@ -151,81 +144,66 @@ pub async fn embed_blog(blogs:Vec<&str>) -> Result<Vec<Vec<f32>>> {
         return Ok(results);
     } else {
         let error_body = response.text().await?;
-        return Err(Error::msg("message"));
+        return Err(Error::msg(error_body));
 
         // return Err(Error::EmbeddingService(error_body));
     }
 }
 
 pub async fn bactch_embeding(all_blogs: &Vec<QdrantdbObject>) -> Result<()> {
-    const BATCH_SIZE: usize = 1;
-    let mut count = 1;
-       dotenv().ok();
-
-    let quadrant_api = env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
-    let quadrant_url = env::var("QUADRANT_URL").expect("failed to load qdt url");
-
-    let client = Qdrant::from_url(&quadrant_url)
-        .api_key(quadrant_api)
-        .build()
-        .unwrap();
+    const BATCH_SIZE: usize = 5;
+    let mut counter = 0;
+    dotenv().ok();
 
     for blogs in all_blogs.chunks(BATCH_SIZE) {
-        count += 1;
+        counter += 1;
+        print!("Batch:{}", counter);
+        // create a vec of emb that will be feeded to the emebding
 
-
-        // create a vec of content that will be feeded to the emebding
-
-        let blog_contents:Vec<&str> =blogs.iter().map(|e| e.content.as_str()).collect();
+        let blog_contents: Vec<&str> = blogs.iter().map(|e| e.content.as_str()).collect();
         let embeding = embed_blog(blog_contents).await?;
 
-    
-        // creating the points 
-         client
-    .upsert_points(
-        UpsertPointsBuilder::new(
-            "{collection_name}",
-            vec![
-                PointStruct::new(1, vec![0.9, 0.1, 0.1], 
-                    [
-                        ("city", "red".into())
-                        
-                        ]
-                ),
-                PointStruct::new(2, vec![0.1, 0.9, 0.1], [("city", "green".into())]),
-                PointStruct::new(3, vec![0.1, 0.1, 0.9], [("city", "blue".into())]),
-            ],
-        )
-        .wait(true),
-    )
-    .await?;
+        // creating the vec of points here
 
+        let points = blogs
+            .iter()
+            .zip(embeding)
+            .map(|(blog, embedding)| create_point_struct(blog, &embedding))
+            .collect::<Vec<_>>();
 
-        
+        //    Insert it to qdrnt
+        let quadrant_api = env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
+        let quadrant_url = env::var("QUADRANT_URL").expect("failed to load qdt url");
 
-         
-        // get the result
+        let client = Qdrant::from_url(&quadrant_url)
+            .api_key(quadrant_api)
+            .build()
+            .unwrap();
 
-        // store it to qdrant
+        insert_to_qdrant(&client, points).await?;
     }
 
     Ok(())
     //
 }
 
-use qdrant_client::qdrant::{Vector,Value as QdrantValue};
-use std::collections::HashMap;
-
 fn create_point_struct(blog: &QdrantdbObject, embedding: &[f32]) -> PointStruct {
     PointStruct::new(
-        blog.id, 
+        blog.id.clone(),
         embedding.to_vec(),
         [
             ("title", blog.metadata.title.as_str().into()),
             ("author", blog.metadata.author.as_str().into()),
             ("date", blog.metadata.date.as_str().into()),
             ("publisher", blog.metadata.publisher.as_str().into()),
-            ("description", blog.metadata.description.as_str().into()),
         ],
     )
+}
+async fn insert_to_qdrant(client: &Qdrant, points: Vec<PointStruct>) -> anyhow::Result<()> {
+    let result = client
+        .upsert_points(UpsertPointsBuilder::new("lektos_blogs", points).wait(true))
+        .await?;
+    println!("QD_UPSERTING_RESULT:{:?}", result);
+
+    Ok(())
 }

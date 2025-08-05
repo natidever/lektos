@@ -7,35 +7,16 @@ use qdrant_client::qdrant::{CreateCollectionBuilder, Distance, VectorParamsBuild
 // use crate::errors::{Result,Error};
 use anyhow::Result;
 
-pub async fn quadrant_check() {
-    dotenv().ok();
-
-    let quadrant_api = env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
-    let quadrant_url = env::var("QUADRANT_URL").expect("failed to load qdt url");
-
-    let client = Qdrant::from_url(&quadrant_url)
-        .api_key(quadrant_api)
-        .build()
-        .unwrap();
-
+pub async fn quadrant_check(client: &Qdrant) {
     let collections_list = client.list_collections().await;
     let _ = dbg!(collections_list);
 }
 
-pub async fn create_collection() -> Result<()> {
-    dotenv().ok();
-    let quadrant_api_key = env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
-    let quadrant_url = env::var("QUADRANT_URL").expect("failed to load qdt url");
-
-    let client = Qdrant::from_url(&quadrant_url)
-        .api_key(quadrant_api_key)
-        .build()
-        .unwrap();
-
+pub async fn create_collection(client: &Qdrant) -> Result<()> {
     let collection = client
         .create_collection(
-            CreateCollectionBuilder::new("blogs")
-                .vectors_config(VectorParamsBuilder::new(768, Distance::Cosine)),
+            CreateCollectionBuilder::new("lektos_blogs")
+                .vectors_config(VectorParamsBuilder::new(3072, Distance::Cosine)),
         )
         .await?;
 
