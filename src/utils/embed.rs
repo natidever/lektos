@@ -10,7 +10,9 @@ use anyhow::Result;
 // use anyhow::Ok;
 use dotenv::dotenv;
 use qdrant_client::qdrant::qdrant_client::QdrantClient;
+use qdrant_client::qdrant::Vectors;
 use qdrant_client::qdrant::{PointStruct, UpsertPointsBuilder};
+use qdrant_client::Qdrant;
 use reqwest::Client;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::header::HeaderMap;
@@ -55,7 +57,24 @@ pub struct EmbedingResult {
     status: String,
 }
 
-pub async fn embed_blog(blogs: &[String]) -> Result<Vec<Vec<f32>>> {
+pub struct DbMetadata {
+    pub title: String,
+    pub author: String,
+    pub date: String,
+    pub publisher: String,
+    pub description: String,
+}
+
+
+pub struct QdrantdbObject {
+    id:u64,
+    metadata:DbMetadata,
+    content:String
+}
+
+
+
+pub async fn embed_blog(blogs:Vec<&str>) -> Result<Vec<Vec<f32>>> {
     dotenv().ok();
 
     let api_key = env::var("GEMINI_API_KEY").expect("msg");
@@ -138,14 +157,53 @@ pub async fn embed_blog(blogs: &[String]) -> Result<Vec<Vec<f32>>> {
     }
 }
 
-pub async fn bactch_embeding(all_blogs: Vec<String>) -> Result<()> {
+pub async fn bactch_embeding(all_blogs: &Vec<QdrantdbObject>) -> Result<()> {
     const BATCH_SIZE: usize = 1;
     let mut count = 1;
+       dotenv().ok();
+
+    let quadrant_api = env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
+    let quadrant_url = env::var("QUADRANT_URL").expect("failed to load qdt url");
+
+    let client = Qdrant::from_url(&quadrant_url)
+        .api_key(quadrant_api)
+        .build()
+        .unwrap();
 
     for blogs in all_blogs.chunks(BATCH_SIZE) {
-        println!("{} Batch", count);
         count += 1;
-        let result = embed_blog(blogs).await?;
+
+
+        // create a vec of content that will be feeded to the emebding
+
+        let blog_contents:Vec<&str> =blogs.iter().map(|e| e.content.as_str()).collect();
+        let embeding = embed_blog(blog_contents).await?;
+
+    
+        // creating the points 
+         client
+    .upsert_points(
+        UpsertPointsBuilder::new(
+            "{collection_name}",
+            vec![
+                PointStruct::new(1, vec![0.9, 0.1, 0.1], 
+                    [
+                        ("city", "red".into())
+                        
+                        ]
+                ),
+                PointStruct::new(2, vec![0.1, 0.9, 0.1], [("city", "green".into())]),
+                PointStruct::new(3, vec![0.1, 0.1, 0.9], [("city", "blue".into())]),
+            ],
+        )
+        .wait(true),
+    )
+    .await?;
+
+
+        
+
+         
         // get the result
 
         // store it to qdrant
@@ -155,30 +213,19 @@ pub async fn bactch_embeding(all_blogs: Vec<String>) -> Result<()> {
     //
 }
 
-// const COLLECTION_NAME: &str = "blogs";
-// pub async fn store_embeddings(
-//     client: &QdrantClient,
-//     // blogs: &[String],
-//     embeddings: Vec<Vec<f32>>,
-// ) -> Result<()> {
-//     // Prepare points (1:1 mapping of blogs to embeddings)
-//     let points: Vec<_> = blogs
-//         .iter()
-//         .zip(embeddings)
-//         .enumerate()
-//         .map(|(id, (blog, vector))| {
-//             PointStruct::new(
-//                 id as u64,  // Simple sequential ID
-//                 vector,
-//                 serde_json::json!({ "content": blog }).try_into().unwrap(),
-//             )
-//         })
-//         .collect();
+use qdrant_client::qdrant::{Vector,Value as QdrantValue};
+use std::collections::HashMap;
 
-//     // Upsert in single batch
-//     // client
-//     //     .upsert_points(COLLECTION_NAME, points, None)
-//     //     .await?;
-
-//     Ok(())
-// }
+fn create_point_struct(blog: &QdrantdbObject, embedding: &[f32]) -> PointStruct {
+    PointStruct::new(
+        blog.id, 
+        embedding.to_vec(),
+        [
+            ("title", blog.metadata.title.as_str().into()),
+            ("author", blog.metadata.author.as_str().into()),
+            ("date", blog.metadata.date.as_str().into()),
+            ("publisher", blog.metadata.publisher.as_str().into()),
+            ("description", blog.metadata.description.as_str().into()),
+        ],
+    )
+}
