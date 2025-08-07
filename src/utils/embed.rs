@@ -192,12 +192,11 @@ pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
     let mut all_results = Vec::with_capacity(blogs.len());
 
     for chunk in blogs.chunks(BATCH_SIZE) {
-        println!("need_pro{}", need_processing);
         let mut chunk_retry_count = 0;
         let mut chunk_processed = false;
         let mut last_error = None;
 
-        if need_processing {
+      
             while chunk_retry_count <= MAX_RETRIES && !chunk_processed {
                 // Rotate API key if we've hit max retries with current key
                 if chunk_retry_count >= MAX_RETRIES - 1 && chunk_retry_count % MAX_RETRIES == 0 {
@@ -290,7 +289,7 @@ pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
                 }
                 chunk_retry_count += 1;
             }
-        }
+        
 
         if !chunk_processed {
             return Err(last_error.unwrap_or_else(|| {
