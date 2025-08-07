@@ -15,7 +15,7 @@ pub async fn quadrant_check(client: &Qdrant) {
 pub async fn create_collection(client: &Qdrant) -> Result<()> {
     let collection = client
         .create_collection(
-            CreateCollectionBuilder::new("lektos_blogs")
+            CreateCollectionBuilder::new("lblogs")
                 .vectors_config(VectorParamsBuilder::new(3072, Distance::Cosine)),
         )
         .await?;

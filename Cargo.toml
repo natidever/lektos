@@ -42,6 +42,8 @@ derive_more = { version = "2.0.1", features = ["display", "from"] }
 qdrant-client = "1.15.0"
 
 pyo3 = { version = "0.25.1", features = ["extension-module"] }
+sqlite = "0.37.0"
+
 
 
 
