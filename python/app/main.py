@@ -1,25 +1,22 @@
 from lektos import MetadataPipeline
-
-class Blog:
-    title:str="Unknown"
-    author:str="Unknown"
+import asyncio
+from app.qdrant.client import get_qdrant_client
 
 
-def main():
-    html_content = """
-<html>
-<head>
-<title>Example Page</title>
-<meta property="og:title" content="OG Title">
-</head>
-</html>
-"""
-    pipeline = MetadataPipeline()
-    extracted =pipeline.run(html_content)
-    print(extracted.title.value if extracted.title else "Unkown")
+
+async def main():
+
+        client =await get_qdrant_client()
+        result = await client.collection_exists("lblogs")
+
+        print(f"does lblog exists:{result}")
+ 
+    
+  
+
 
 
   
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
