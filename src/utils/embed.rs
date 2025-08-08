@@ -35,6 +35,7 @@ use crate::{models::blog::Blog, utils::analysis::BlogResult};
 const EMBEDING_MODEL: &str = "models/embedding-001";
 
 pub struct DbMetadata {
+    pub url :String,
     pub title: String,
     pub author: String,
     pub date: String,
@@ -171,12 +172,12 @@ pub struct QdrantdbObject {
 pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
     dotenv().ok();
 
-    let connection = sqlite::open("urls.db")?;
+    // let connection = sqlite::open("urls.db")?;
 
     // Define all available API keys
     let api_keys = [
-        env::var("GEMINI_API_KEY_1").expect("GEMINI_API_KEY_1 not set"),
-        env::var("GEMINI_API_KEY_2").expect("GEMINI_API_KEY_2 not set"),
+        // env::var("GEMINI_API_KEY_1").expect("GEMINI_API_KEY_1 not set"),
+        // env::var("GEMINI_API_KEY_2").expect("GEMINI_API_KEY_2 not set"),
         env::var("GEMINI_API_KEY_3").expect("GEMINI_API_KEY_3 not set"),
         env::var("GEMINI_API_KEY_4").expect("GEMINI_API_KEY_4 not set"),
         env::var("GEMINI_API_KEY_5").expect("GEMINI_API_KEY_5 not set"),
@@ -216,7 +217,8 @@ pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
                     .iter()
                     .map(|blog| {
                         json!({
-                            "model": "models/text-embedding-005",
+                            "model": "models/text-embedding-001",
+                            "output_dimensionality": 768,
                             "task_type": "SEMANTIC_SIMILARITY",
                             "content": {
                                 "parts": [{
@@ -340,6 +342,7 @@ fn create_point_struct(blog: &QdrantdbObject, embedding: &[f32]) -> PointStruct 
         blog.id.clone(),
         embedding.to_vec(),
         [
+            ("url",blog.metadata.url.as_str().into()),
             ("title", blog.metadata.title.as_str().into()),
             ("author", blog.metadata.author.as_str().into()),
             ("date", blog.metadata.date.as_str().into()),
@@ -349,7 +352,7 @@ fn create_point_struct(blog: &QdrantdbObject, embedding: &[f32]) -> PointStruct 
 }
 async fn insert_to_qdrant(client: &Qdrant, points: Vec<PointStruct>) -> anyhow::Result<()> {
     let result = client
-        .upsert_points(UpsertPointsBuilder::new("lblogs", points).wait(true))
+        .upsert_points(UpsertPointsBuilder::new("blogs", points).wait(true))
         .await?;
     println!("QD_UPSERTING_RESULT:{:?}", result);
 

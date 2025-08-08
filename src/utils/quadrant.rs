@@ -12,11 +12,11 @@ pub async fn quadrant_check(client: &Qdrant) {
     let _ = dbg!(collections_list);
 }
 
-pub async fn create_collection(client: &Qdrant) -> Result<()> {
+pub async fn create_collection(client: &Qdrant, collection_name: &str) -> Result<()> {
     let collection = client
         .create_collection(
-            CreateCollectionBuilder::new("lblogs")
-                .vectors_config(VectorParamsBuilder::new(3072, Distance::Cosine)),
+            CreateCollectionBuilder::new("blogs")
+                .vectors_config(VectorParamsBuilder::new(768, Distance::Cosine)),
         )
         .await?;
 

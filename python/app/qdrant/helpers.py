@@ -14,8 +14,6 @@ async def default_feed(client: AsyncQdrantClient):
             lte="2022-11-22T15:25:41.533Z",
         ),
     )
-    
-
 
     result = await client.scroll(
         collection_name=COLLECTION_NAME,
@@ -27,17 +25,23 @@ async def default_feed(client: AsyncQdrantClient):
 
 
 async def index(
-    client: AsyncQdrantClient,
-      collection_name: str, 
-      field_name: str, 
-      field_schema: str
+    client: AsyncQdrantClient, collection_name: str, field_name: str, field_schema: str
 ):
-  result = await client.create_payload_index(
+    return await client.create_payload_index(
         collection_name=collection_name,
         field_name=field_name,
         field_schema=field_schema,
     )
-  
-  return result
-   
 
+     
+
+
+async def similarity_search(
+    client: AsyncQdrantClient, collection_name: str, query: list[float]
+):
+  return  await client.query_points(
+        collection_name=collection_name,
+        query=query,  # <--- Dense vector
+    )
+
+     
