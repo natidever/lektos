@@ -1,0 +1,4 @@
+
+COLLECTION_NAME = "lblogs"
+
+
