@@ -1,7 +1,3 @@
-[build-system]
-requires = ["maturin>=1.9,<2.0"]
-build-backend = "maturin"
-
 [project]
 name = "lektos"
 requires-python = ">=3.8"
@@ -11,6 +7,10 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dynamic = ["version"]
+dependencies = [
+    "python-dotenv>=1.0.1",
+    "qdrant-client>=1.12.1",
+]
 [tool.maturin]
 features = ["pyo3/extension-module"]
 

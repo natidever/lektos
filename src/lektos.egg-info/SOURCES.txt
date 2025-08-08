@@ -1,0 +1,7 @@
+README.md
+pyproject.toml
+src/lektos.egg-info/PKG-INFO
+src/lektos.egg-info/SOURCES.txt
+src/lektos.egg-info/dependency_links.txt
+src/lektos.egg-info/requires.txt
+src/lektos.egg-info/top_level.txt

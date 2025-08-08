@@ -23,6 +23,7 @@ src/bin/
 **/*.tmp
 **/*.bak
 *.log
+.ruff_cache
 
 # IDE/editor specific
 # VS Code
