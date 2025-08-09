@@ -33,15 +33,11 @@ async def index(
         field_schema=field_schema,
     )
 
-     
-
 
 async def similarity_search(
     client: AsyncQdrantClient, collection_name: str, query: list[float]
 ):
-  return  await client.query_points(
+    return await client.query_points(
         collection_name=collection_name,
         query=query,  # <--- Dense vector
     )
-
-     
