@@ -5,7 +5,7 @@ edition = "2024"
 
 [lib]
 name = "lektos"           
-crate-type = ["cdylib"] 
+# crate-type = ["cdylib"] 
 
 [dependencies]
 warc = "0.4.0"
@@ -16,6 +16,10 @@ ammonia = "4.1.1"
 maplit = "1.0.2"
 serde_json = "1.0.140"
 serde={version = "1.0.219", features = ["derive"]}
+uuid={version = "1.17.0", features = ["v4"]}
+sha2 = "0.10.9"
+
+
 gemini-rust = "0.4" 
 
 anyhow = "1.0"
@@ -38,6 +42,8 @@ derive_more = { version = "2.0.1", features = ["display", "from"] }
 qdrant-client = "1.15.0"
 
 pyo3 = { version = "0.25.1", features = ["extension-module"] }
+sqlite = "0.37.0"
+
 
 
 

@@ -14,7 +14,7 @@ use crate::models::blog::Blog;
 use crate::utils::html_utils::BlogProcessor;
 use crate::utils::url_visit_check::UrlVisitTracker;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct AnalysisData {
     pub url: String,
     pub html: String,
