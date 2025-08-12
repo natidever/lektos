@@ -1,14 +1,25 @@
-// this will expose a funcion to that access a path to warc file and process it 
+// this will expose a funcion to that access a path to warc file and process it
 
 use std::fs;
 
 use anyhow::Result;
 use warc::{WarcHeader, WarcReader};
 
-use crate::{extractors::pipeline::MetadataPipeline, models::blog::Blog, utils::{analysis::{log_blog_to_csv, BlogLog}, find_blog_url::is_blog_url, find_feeds::{extract_url, is_feed}, html_utils::BlogProcessor, url_visit_check::UrlVisitTracker, valid_url_from_feeds::FeedUrlValidator}};
+use crate::{
+    extractors::pipeline::MetadataPipeline,
+    models::blog::Blog,
+    utils::{
+        analysis::{BlogLog, log_blog_to_csv},
+        find_blog_url::is_blog_url,
+        find_feeds::{extract_url, is_feed},
+        html_utils::BlogProcessor,
+        url_visit_check::UrlVisitTracker,
+        valid_url_from_feeds::FeedUrlValidator,
+    },
+};
 
-pub fn extractor_runner(warc_path:&str)->Result<()> {
-        let vist_url_tracker = UrlVisitTracker::new();
+pub fn core_extractor_runner(warc_path: &str) -> Result<()> {
+    let vist_url_tracker = UrlVisitTracker::new();
 
     let feed_url_validator = FeedUrlValidator::new()?;
 
@@ -35,8 +46,7 @@ pub fn extractor_runner(warc_path:&str)->Result<()> {
             .header(WarcHeader::TargetURI)
             .map(|s| s.to_string())
             .unwrap_or_default();
-        println!("URL:{}",url);
-        
+        println!("URL:{}", url);
 
         // Check WARC type is response (contains actual content) which is the html
         // if record.header(WarcHeader::WarcType).map(|s| s.to_string())

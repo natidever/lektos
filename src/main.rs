@@ -24,9 +24,6 @@ use std::{env, fs};
 
 use anyhow::Result;
 
-
-
-
 #[tokio::main]
 pub async fn main() -> Result<()> {
     // let vist_url_tracker = UrlVisitTracker::new();
@@ -36,11 +33,7 @@ pub async fn main() -> Result<()> {
     let warc_name =
         "src/common_crawl_2025-26_warcfiles/CC-MAIN-20250612112840-20250612142840-00001.warc.gz";
 
-
-
     extractor_runner(&warc_name);
-
-    
 
     Ok(())
 }

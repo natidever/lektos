@@ -35,7 +35,7 @@ use crate::{models::blog::Blog, utils::analysis::BlogResult};
 const EMBEDING_MODEL: &str = "models/embedding-001";
 
 pub struct DbMetadata {
-    pub url :String,
+    pub url: String,
     pub title: String,
     pub author: String,
     pub date: String,
@@ -197,101 +197,99 @@ pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
         let mut chunk_processed = false;
         let mut last_error = None;
 
-      
-            while chunk_retry_count <= MAX_RETRIES && !chunk_processed {
-                // Rotate API key if we've hit max retries with current key
-                if chunk_retry_count >= MAX_RETRIES - 1 && chunk_retry_count % MAX_RETRIES == 0 {
-                    current_key_index = (current_key_index + 1) % api_keys.len();
-                    println!("Rotating to API key {}", current_key_index + 1);
-                    chunk_retry_count = 0; // Reset retry counter for new key
-                }
+        while chunk_retry_count <= MAX_RETRIES && !chunk_processed {
+            // Rotate API key if we've hit max retries with current key
+            if chunk_retry_count >= MAX_RETRIES - 1 && chunk_retry_count % MAX_RETRIES == 0 {
+                current_key_index = (current_key_index + 1) % api_keys.len();
+                println!("Rotating to API key {}", current_key_index + 1);
+                chunk_retry_count = 0; // Reset retry counter for new key
+            }
 
-                let mut headers = HeaderMap::new();
-                headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-                headers.insert(
-                    "x-goog-api-key",
-                    HeaderValue::from_str(&api_keys[current_key_index]).expect("Invalid API key"),
-                );
+            let mut headers = HeaderMap::new();
+            headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+            headers.insert(
+                "x-goog-api-key",
+                HeaderValue::from_str(&api_keys[current_key_index]).expect("Invalid API key"),
+            );
 
-                let requests: Vec<_> = chunk
-                    .iter()
-                    .map(|blog| {
-                        json!({
-                            "model": "models/text-embedding-001",
-                            "output_dimensionality": 768,
-                            "task_type": "SEMANTIC_SIMILARITY",
-                            "content": {
-                                "parts": [{
-                                    "text": blog
-                                }]
-                            }
-                        })
+            let requests: Vec<_> = chunk
+                .iter()
+                .map(|blog| {
+                    json!({
+                        "model": "models/text-embedding-001",
+                        "output_dimensionality": 768,
+                        "task_type": "SEMANTIC_SIMILARITY",
+                        "content": {
+                            "parts": [{
+                                "text": blog
+                            }]
+                        }
                     })
-                    .collect();
-                let request_body = json!({ "requests": requests });
+                })
+                .collect();
+            let request_body = json!({ "requests": requests });
 
-                let client = Client::new();
-                match client
-                    .post(embeding_url)
-                    .headers(headers)
-                    .json(&request_body)
-                    .send()
-                    .await
-                {
-                    Ok(response) => {
-                        if response.status().is_success() {
-                            let response_body = response.json::<Value>().await?;
-                            if let Some(embeddings) = response_body["embeddings"].as_array() {
-                                let mut results = Vec::with_capacity(embeddings.len());
-                                for embedding in embeddings {
-                                    if let Some(values) = embedding["values"].as_array() {
-                                        let mut vec = Vec::with_capacity(values.len());
-                                        for value in values {
-                                            if let Some(val) = value.as_f64() {
-                                                vec.push(val as f32);
-                                            }
+            let client = Client::new();
+            match client
+                .post(embeding_url)
+                .headers(headers)
+                .json(&request_body)
+                .send()
+                .await
+            {
+                Ok(response) => {
+                    if response.status().is_success() {
+                        let response_body = response.json::<Value>().await?;
+                        if let Some(embeddings) = response_body["embeddings"].as_array() {
+                            let mut results = Vec::with_capacity(embeddings.len());
+                            for embedding in embeddings {
+                                if let Some(values) = embedding["values"].as_array() {
+                                    let mut vec = Vec::with_capacity(values.len());
+                                    for value in values {
+                                        if let Some(val) = value.as_f64() {
+                                            vec.push(val as f32);
                                         }
-                                        results.push(vec);
                                     }
+                                    results.push(vec);
                                 }
-                                all_results.extend(results);
-                                chunk_processed = true;
-                                continue;
                             }
-                        } else {
-                            let status = response.status();
-                            let error_body = response.text().await.unwrap_or_default();
-                            println!(
-                                "Error from API key {}: HTTP {}: {}",
-                                current_key_index + 1,
-                                status,
-                                error_body
-                            );
-                            last_error = Some(anyhow::anyhow!("HTTP {}: {}", status, error_body));
+                            all_results.extend(results);
+                            chunk_processed = true;
+                            continue;
+                        }
+                    } else {
+                        let status = response.status();
+                        let error_body = response.text().await.unwrap_or_default();
+                        println!(
+                            "Error from API key {}: HTTP {}: {}",
+                            current_key_index + 1,
+                            status,
+                            error_body
+                        );
+                        last_error = Some(anyhow::anyhow!("HTTP {}: {}", status, error_body));
 
-                            if status == StatusCode::TOO_MANY_REQUESTS
-                                || status == StatusCode::INTERNAL_SERVER_ERROR
-                            {
-                                let backoff =
-                                    INITIAL_BACKOFF * 2u64.pow(chunk_retry_count % MAX_RETRIES);
-                                println!(
-                                    "Rate limited on key {}. Waiting {} seconds before retry (attempt {}/{})...",
-                                    current_key_index + 1,
-                                    backoff,
-                                    (chunk_retry_count % MAX_RETRIES) + 1,
-                                    MAX_RETRIES
-                                );
-                                tokio::time::sleep(Duration::from_secs(backoff)).await;
-                            }
+                        if status == StatusCode::TOO_MANY_REQUESTS
+                            || status == StatusCode::INTERNAL_SERVER_ERROR
+                        {
+                            let backoff =
+                                INITIAL_BACKOFF * 2u64.pow(chunk_retry_count % MAX_RETRIES);
+                            println!(
+                                "Rate limited on key {}. Waiting {} seconds before retry (attempt {}/{})...",
+                                current_key_index + 1,
+                                backoff,
+                                (chunk_retry_count % MAX_RETRIES) + 1,
+                                MAX_RETRIES
+                            );
+                            tokio::time::sleep(Duration::from_secs(backoff)).await;
                         }
                     }
-                    Err(e) => {
-                        last_error = Some(anyhow::anyhow!("Request failed: {}", e));
-                    }
                 }
-                chunk_retry_count += 1;
+                Err(e) => {
+                    last_error = Some(anyhow::anyhow!("Request failed: {}", e));
+                }
             }
-        
+            chunk_retry_count += 1;
+        }
 
         if !chunk_processed {
             return Err(last_error.unwrap_or_else(|| {
@@ -342,7 +340,7 @@ fn create_point_struct(blog: &QdrantdbObject, embedding: &[f32]) -> PointStruct 
         blog.id.clone(),
         embedding.to_vec(),
         [
-            ("url",blog.metadata.url.as_str().into()),
+            ("url", blog.metadata.url.as_str().into()),
             ("title", blog.metadata.title.as_str().into()),
             ("author", blog.metadata.author.as_str().into()),
             ("date", blog.metadata.date.as_str().into()),
