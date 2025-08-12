@@ -11,6 +11,7 @@ src/bin/
 **/*.rlib
 **/*.rmeta
 
+
 # Executables and binaries
 **/*.exe
 **/*.dll
@@ -69,6 +70,7 @@ tarpaulin-report.html
 *.warc.gz.*
 *.warc.*
 *.warc.*
+#static files
 common_crawl_2025-26_warcfiles
 analysis.json
 tt.json
@@ -77,3 +79,5 @@ raw.json
 failed_html.json
 *.json
 valid_htmls.json
+*.ex.py
+

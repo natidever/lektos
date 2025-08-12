@@ -34,10 +34,10 @@ async def index(
     )
 
 
-async def similarity_search(
+async def similarity_search_service(
     client: AsyncQdrantClient, collection_name: str, query: list[float]
 ):
     return await client.query_points(
         collection_name=collection_name,
-        query=query,  # <--- Dense vector
+        query=query,
     )
