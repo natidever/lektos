@@ -1,6 +1,6 @@
 #![allow(unused)]
 use crate::extractors::pipeline::MetadataPipeline;
-use crate::extractors::runner::extractor_runner;
+use crate::extractors::runner::core_extractor_runner;
 use crate::models::blog::Blog;
 use crate::models::metadata::ExtractionResult;
 use crate::models::metadata::FieldResult;
@@ -33,7 +33,7 @@ pub async fn main() -> Result<()> {
     let warc_name =
         "src/common_crawl_2025-26_warcfiles/CC-MAIN-20250612112840-20250612142840-00001.warc.gz";
 
-    extractor_runner(&warc_name);
+    core_extractor_runner(&warc_name);
 
     Ok(())
 }
