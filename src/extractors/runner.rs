@@ -3,6 +3,7 @@
 use std::fs;
 
 use anyhow::Result;
+use pyo3::prelude::*;
 use warc::{WarcHeader, WarcReader};
 
 use crate::{
@@ -18,20 +19,22 @@ use crate::{
     },
 };
 
-pub fn core_extractor_runner(warc_path: &str) -> Result<()> {
+pub fn core_extractor_runner(warc_path: &str) -> Result<Vec<String>> {
     let vist_url_tracker = UrlVisitTracker::new();
 
-    let feed_url_validator = FeedUrlValidator::new()?;
+    // let feed_url_validator = FeedUrlValidator::new()?;
 
     // let warc_path =
     //     "src/common_crawl_2025-26_warcfiles/CC-MAIN-20250612112840-20250612142840-00001.warc.gz";
 
-    let mut reader = WarcReader::from_path_gzip(warc_path).unwrap();
+    let mut reader = WarcReader::from_path_gzip(warc_path)?;
 
     let mut stream_iter = reader.stream_records();
 
     let mut blog_count = 0;
     const MAX_BLOGS: usize = 500;
+
+    let mut urls:Vec<String> = Vec::new();
 
     while let Some(record_result) = stream_iter.next_item() {
         let record = match record_result {
@@ -46,7 +49,14 @@ pub fn core_extractor_runner(warc_path: &str) -> Result<()> {
             .header(WarcHeader::TargetURI)
             .map(|s| s.to_string())
             .unwrap_or_default();
-        println!("URL:{}", url);
+
+
+        blog_count+=1;
+        if blog_count >3{
+            break;
+        }
+        urls.push(url);
+
 
         // Check WARC type is response (contains actual content) which is the html
         // if record.header(WarcHeader::WarcType).map(|s| s.to_string())
@@ -174,6 +184,7 @@ pub fn core_extractor_runner(warc_path: &str) -> Result<()> {
         //     }
         // }
     }
+        Ok(urls)
 
-    Ok(())
+
 }

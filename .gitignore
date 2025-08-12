@@ -79,5 +79,4 @@ raw.json
 failed_html.json
 *.json
 valid_htmls.json
-*.ex.py
 
