@@ -28,9 +28,13 @@ fn lektos(m: &Bound<'_, PyModule>) -> PyResult<()> {
 }
 
 #[pyfunction]
-pub fn extractor_runner(warc_file_path: &str) -> PyResult<()> {
-    core_extractor_runner(warc_file_path);
-    Ok(())  // Must return PyResult
+pub fn extractor_runner(warc_file_path: &str) -> PyResult<Vec<String>> {
+    match core_extractor_runner(warc_file_path){
+        Ok(urls)=>Ok(urls),
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string())),
+
+    }
+  
 }
 
 
