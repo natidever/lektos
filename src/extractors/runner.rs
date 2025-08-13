@@ -1,16 +1,25 @@
 // this will expose a funcion to that access a path to warc file and process it
 
-use std::fs;
+use std::{
+    env,
+    fs::{self, File},
+    io::{BufRead, BufReader},
+};
 
-use anyhow::Result;
+use anyhow::{Ok, Result};
+use dotenv::dotenv;
 use pyo3::prelude::*;
-use warc::{WarcHeader, WarcReader};
+use qdrant_client::Qdrant;
+use warc::{Record, StreamingBody, WarcHeader, WarcReader};
+
+use std::ops::ControlFlow;
 
 use crate::{
     extractors::pipeline::MetadataPipeline,
     models::blog::Blog,
     utils::{
         analysis::{BlogLog, log_blog_to_csv},
+        embed::{DbMetadata, QdrantdbObject, bactch_embeding, generate_content_id},
         find_blog_url::is_blog_url,
         find_feeds::{extract_url, is_feed},
         html_utils::BlogProcessor,
@@ -19,13 +28,14 @@ use crate::{
     },
 };
 
-pub fn core_extractor_runner(warc_path: &str) -> Result<Vec<String>> {
+pub async fn core_extractor_runner(warc_path: &str) -> Result<Vec<String>> {
+    dotenv().ok();
+
+    let mut blog_to_embed: Vec<QdrantdbObject> = Vec::new();
+
     let vist_url_tracker = UrlVisitTracker::new();
 
-    // let feed_url_validator = FeedUrlValidator::new()?;
-
-    // let warc_path =
-    //     "src/common_crawl_2025-26_warcfiles/CC-MAIN-20250612112840-20250612142840-00001.warc.gz";
+    let feed_url_validator = FeedUrlValidator::new()?;
 
     let mut reader = WarcReader::from_path_gzip(warc_path)?;
 
@@ -34,157 +44,86 @@ pub fn core_extractor_runner(warc_path: &str) -> Result<Vec<String>> {
     let mut blog_count = 0;
     const MAX_BLOGS: usize = 500;
 
-    let mut urls:Vec<String> = Vec::new();
+    let mut urls: Vec<String> = Vec::new();
 
     while let Some(record_result) = stream_iter.next_item() {
-        let record = match record_result {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("Error reading record: {}", e);
-                continue;
-            }
-        };
+        let record = record_result?;
         // Extract URL
         let url = record
             .header(WarcHeader::TargetURI)
             .map(|s| s.to_string())
             .unwrap_or_default();
 
-
-        blog_count+=1;
-        if blog_count >3{
-            break;
-        }
-        urls.push(url);
-
-
         // Check WARC type is response (contains actual content) which is the html
-        // if record.header(WarcHeader::WarcType).map(|s| s.to_string())
-        //     != Some("response".to_string())
-        // {
-        //     continue;
-        // }
-        // if vist_url_tracker.is_url_visited(&url) {
-        //     continue;
-        // }
+        if record.header(WarcHeader::WarcType).map(|s| s.to_string())
+            != Some("response".to_string())
+        {
+            continue;
+        }
+        if vist_url_tracker.is_url_visited(&url) {
+            continue;
+        }
 
-        // if feed_url_validator.is_from_feed(&url)? {
-        //     match record.into_buffered() {
-        //         Ok(buffered) => {
-        //             let body = buffered.body();
-
-        //             // Extract the actual HTML from the HTTP response
-        //             if let Some(html_start) = BlogProcessor::find_html_start(body) {
-        //                 blog_count += 1;
-        //                 if blog_count >= MAX_BLOGS {
-        //                     break;
-        //                 }
-
-        //                 let html = &body[html_start..];
-        //                 let html_content = String::from_utf8_lossy(&html);
-        //                 let file_html = html_content.to_string();
-        //                 let pipeline = MetadataPipeline::new();
-        //                 let metadata = pipeline.run(file_html.as_str());
-        //                 let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_str());
-
-        //                 let blog = Blog {
-        //                     title: metadata.title.map(|f| f.value).unwrap_or("Untitled".into()),
-        //                     author: metadata.author.map(|f| f.value).unwrap_or("Unknown".into()),
-
-        //                     date: metadata.date.map(|f| f.value).unwrap_or("".into()),
-        //                     publisher: metadata.publisher.map(|f| f.value).unwrap_or_default(),
-        //                     content: blog_content,
-        //                 };
-
-        //                 let log = BlogLog {
-        //                     url: url,
-        //                     title: blog.title.clone(),
-        //                     author: blog.author.clone(),
-        //                     date: blog.date.clone(),
-        //                     publisher: blog.publisher.clone(),
-        //                     word_count: blog.content.split_whitespace().count(),
-        //                 };
-        //                 println!("immediate above function");
-        //                 log_blog_to_csv(&log, "src/blog_log.csv")?;
-        //             } else {
-        //                 eprintln!("No HTML content found in record for URL: {}", url);
-
-        //                 continue;
-        //             }
-        //         }
-        //         Err(e) => {
-        //             eprintln!("Error buffering record: {}", e);
-        //         }
-        //     }
-        // } else {
-        //     if is_blog_url(&url) {
-        //         match record.into_buffered() {
-        //             Ok(buffered) => {
-        //                 let body = buffered.body();
-
-        //                 // Extract the actual HTML from the HTTP response
-        //                 if let Some(html_start) = BlogProcessor::find_html_start(body) {
-        //                     blog_count += 1;
-        //                     if blog_count >= MAX_BLOGS {
-        //                         break;
-        //                     }
-
-        //                     let html = &body[html_start..];
-        //                     let html_content = String::from_utf8_lossy(&html);
-        //                     let file_html = html_content.to_string();
-        //                     let pipeline = MetadataPipeline::new();
-        //                     let metadata = pipeline.run(file_html.as_str());
-        //                     let blog_content =
-        //                         BlogProcessor::extract_and_sanitize(file_html.as_str());
-
-        //                     let mut blog = Blog {
-        //                         title: metadata.title.map(|f| f.value).unwrap_or("Untitled".into()),
-        //                         author: metadata
-        //                             .author
-        //                             .map(|f| f.value)
-        //                             .unwrap_or("Unknown".into()),
-
-        //                         date: metadata.date.map(|f| f.value).unwrap_or("".into()),
-        //                         publisher: metadata.publisher.map(|f| f.value).unwrap_or_default(),
-        //                         content: blog_content,
-        //                     };
-        //                     let log = BlogLog {
-        //                         url: url,
-        //                         title: blog.title.clone(),
-        //                         author: blog.author.clone(),
-        //                         date: blog.date.clone(),
-        //                         publisher: blog.publisher.clone(),
-        //                         word_count: blog.content.split_whitespace().count(),
-        //                     };
-        //                     log_blog_to_csv(&log, "src/blog_log.csv")?;
-        //                 } else {
-        //                     let body = buffered.body();
-
-        //                     let str_body = String::from_utf8_lossy(body);
-
-        //                     if is_feed(&str_body) {
-        //                         println!("Yes it is feed{}", url);
-
-        //                         let valid_urls = extract_url(&str_body)?;
-
-        //                         let urls = valid_urls.join("\n");
-        //                         fs::write("accepted_url.html", urls)?;
-        //                     }
-        //                     eprintln!("No HTML content found in record for URL: {}", url);
-        //                     continue;
-        //                 }
-        //             }
-        //             Err(e) => {
-        //                 eprintln!("Error buffering record: {}", e);
-        //             }
-        //         }
-        //     } else {
-        //         // do nothin
-        //         // the url is not blog
-        //     }
-        // }
+        if feed_url_validator.is_from_feed(&url)? {
+            // the url is blog since it came from feeds
+            proccess_and_push(record, &mut blog_to_embed, &url);
+        } else {
+            if is_blog_url(&url) {
+                proccess_and_push(record, &mut blog_to_embed, &url);
+            } else {
+                // do nothin
+                // the url is not blog
+            }
+        }
     }
-        Ok(urls)
 
+    let quadrant_api = env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
+    let quadrant_url = env::var("QUADRANT_URL").expect("failed to load qdt url");
 
+    let client = Qdrant::from_url(&quadrant_url)
+        .api_key(quadrant_api)
+        .build()
+        .unwrap();
+    bactch_embeding(&blog_to_embed, &client).await?;
+
+    Ok(urls)
+}
+
+fn proccess_and_push<B: BufRead>(
+    record: Record<StreamingBody<'_, B>>,
+    blog_to_embed: &mut Vec<QdrantdbObject>,
+    url: &str,
+) -> Result<ControlFlow<()>> {
+    let buffered = record.into_buffered()?;
+    let body = buffered.body();
+
+    // Extract the actual HTML from the HTTP response
+    if let Some(html_start) = BlogProcessor::find_html_start(body) {
+        let html = &body[html_start..];
+        let html_content = String::from_utf8_lossy(&html);
+        println!("HTML:{}", html_content);
+        let file_html = html_content.to_string();
+        let pipeline = MetadataPipeline::new();
+        let metadata = pipeline.run(file_html.as_str());
+        let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_str());
+
+        let qdrant_object = QdrantdbObject {
+            id: generate_content_id(&blog_content),
+            content: blog_content,
+            metadata: DbMetadata {
+                url: url.to_lowercase(),
+                title: metadata.title.map(|f| f.value).unwrap_or("Untitled".into()),
+                author: metadata.author.map(|f| f.value).unwrap_or("Unknown".into()),
+                date: metadata.date.map(|f| f.value).unwrap_or("".into()),
+                publisher: metadata.publisher.map(|f| f.value).unwrap_or_default(),
+            },
+        };
+
+        blog_to_embed.push(qdrant_object);
+        return Ok(ControlFlow::Continue(()));
+    } else {
+        // eprintln!("No HTML content found in record for URL: {}", url);
+
+        return Ok(ControlFlow::Continue(()));
+    }
 }

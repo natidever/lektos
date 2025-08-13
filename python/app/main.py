@@ -21,19 +21,19 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(search_router,prefix="/search")
+app.include_router(search_router, prefix="/search")
 
 
 @app.get("/")
 async def root(qdrant_client=Depends(get_qdrant_client)):
-    return await default_feed(client = qdrant_client)
+    return await default_feed(client=qdrant_client)
     # return "Server running"
-
 
 
 @app.get("/health-check")
 def health_check():
     embed_user_query("hy")
     return "Server running"
+
 
 """ Accept user prompt then embed it then pass it to as qury"""
