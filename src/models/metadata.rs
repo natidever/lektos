@@ -25,7 +25,7 @@ pub struct ExtractionResult {
 
     // new field image
 
-
+    #[pyo3(get)]
     pub image_url:Option<FieldResult>
 }
 

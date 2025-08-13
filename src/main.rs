@@ -12,6 +12,7 @@ use crate::utils::find_feeds::is_feed;
 use crate::utils::html_utils::BlogProcessor;
 use crate::utils::url_visit_check::UrlVisitTracker;
 use crate::utils::valid_url_from_feeds::FeedUrlValidator;
+use pyo3::ffi::printfunc;
 use scraper::Selector;
 use warc::WarcHeader;
 use warc::WarcReader;
@@ -26,9 +27,9 @@ use anyhow::Result;
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
-    // let vist_url_tracker = UrlVisitTracker::new();
+    let vist_url_tracker = UrlVisitTracker::new();
 
-    // let feed_url_validator = FeedUrlValidator::new()?;
+    let feed_url_validator = FeedUrlValidator::new()?;
 
     let warc_name =
         "src/common_crawl_2025-26_warcfiles/CC-MAIN-20250612112840-20250612142840-00001.warc.gz";
@@ -37,4 +38,9 @@ pub async fn main() -> Result<()> {
     // println!("fff{:?}", result);
 
     Ok(())
+
+
+
+
+
 }

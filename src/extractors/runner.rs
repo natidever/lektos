@@ -89,6 +89,18 @@ pub async fn core_extractor_runner(warc_path: &str) -> Result<Vec<String>> {
     Ok(urls)
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
 fn proccess_and_push<B: BufRead>(
     record: Record<StreamingBody<'_, B>>,
     blog_to_embed: &mut Vec<QdrantdbObject>,
@@ -98,15 +110,16 @@ fn proccess_and_push<B: BufRead>(
     let body = buffered.body();
 
     // Extract the actual HTML from the HTTP response
+    
+
     if let Some(html_start) = BlogProcessor::find_html_start(body) {
         let html = &body[html_start..];
         let html_content = String::from_utf8_lossy(&html);
-        println!("HTML:{}", html_content);
         let file_html = html_content.to_string();
         let pipeline = MetadataPipeline::new();
         let metadata = pipeline.run(file_html.as_str());
 
-        println!("IMAGE_URL:{:?}",{metadata.image_url});
+        println!("IMAGE_URL:{:?}",{&metadata.image_url});
         let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_str());
 
         let qdrant_object = QdrantdbObject {

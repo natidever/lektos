@@ -14,7 +14,7 @@ const OGP_MAPPING: [(&str, &str); 6] = [
 
 
 
-    ("og:image","image"),
+    ("og:image","image_url"),
 ];
 
 pub struct OgpExtractor;
@@ -63,7 +63,7 @@ impl MetadataExtractor for OgpExtractor {
                         _ => {}
                     }
 
-                    found_count += 1;
+                    found_count += 1; 
                     break;
                 }
             }

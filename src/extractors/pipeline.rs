@@ -20,7 +20,7 @@ pub struct Metadata {
 
     // new image field
 
-    pub image_url :Option<FieldResult>
+        pub image_url :Option<FieldResult>
 
 
 
@@ -55,6 +55,8 @@ impl MetadataPipeline {
             Self::merge_field(&mut final_metadata.author, result.author);
             Self::merge_field(&mut final_metadata.date, result.date);
             Self::merge_field(&mut final_metadata.publisher, result.publisher);
+            Self::merge_field(&mut final_metadata.image_url, result.image_url);
+
             confidence += result.confidence;
             count += 1;
         }
