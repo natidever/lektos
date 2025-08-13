@@ -22,6 +22,11 @@ pub struct ExtractionResult {
     pub publisher: Option<FieldResult>,
     #[pyo3(get)]
     pub confidence: f32, // 0.0-1.0
+
+    // new field image
+
+
+    pub image_url:Option<FieldResult>
 }
 
 pub struct FeedExtractionResult {

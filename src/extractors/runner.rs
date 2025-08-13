@@ -105,6 +105,8 @@ fn proccess_and_push<B: BufRead>(
         let file_html = html_content.to_string();
         let pipeline = MetadataPipeline::new();
         let metadata = pipeline.run(file_html.as_str());
+
+        println!("IMAGE_URL:{:?}",{metadata.image_url});
         let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_str());
 
         let qdrant_object = QdrantdbObject {
