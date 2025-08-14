@@ -16,15 +16,8 @@ pub struct Metadata {
     #[pyo3(get)]
     pub description: Option<FieldResult>,
 
-    
-
     // new image field
-
-        pub image_url :Option<FieldResult>
-
-
-
-
+    pub image_url: Option<FieldResult>,
 }
 
 // titel and which extractor it came from

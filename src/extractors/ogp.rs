@@ -4,17 +4,13 @@ use scraper::Selector;
 
 use crate::models::metadata::{ExtractionResult, FieldResult, MetadataExtractor};
 
-
 const OGP_MAPPING: [(&str, &str); 6] = [
     ("og:title", "title"),
     ("og:description", "description"),
     ("og:article:author", "author"),
     ("og:article:published_time", "date"),
     ("og:site_name", "publisher"),
-
-
-
-    ("og:image","image_url"),
+    ("og:image", "image_url"),
 ];
 
 pub struct OgpExtractor;
@@ -58,12 +54,12 @@ impl MetadataExtractor for OgpExtractor {
                         "author" => extraction_result.author = Some(field_result),
                         "date" => extraction_result.date = Some(field_result),
                         "publisher" => extraction_result.publisher = Some(field_result),
-                        "image_url"=>extraction_result.image_url=Some(field_result),
+                        "image_url" => extraction_result.image_url = Some(field_result),
 
                         _ => {}
                     }
 
-                    found_count += 1; 
+                    found_count += 1;
                     break;
                 }
             }

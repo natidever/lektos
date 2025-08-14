@@ -32,16 +32,12 @@ def batch_process_warcs(warc_directory, max_workers=8):
 
             futures = [process_single_warc.remote(str(f.absolute())) for f in chunk]
 
-        while futures:
-            done, futures = ray.wait(futures, timeout=5.0)
-            for result in ray.get(done):
-                urls = result
-                print(f"rresult:{urls}")
-                # if error:
-                #     pbar.write(f"Error: {error}")
-                # else:
-                results.extend(urls)
-                pbar.update(1)
+        # while futures:
+        #     done, futures = ray.wait(futures, timeout=5.0)
+        #     for result in ray.get(done):
+        #         print(f"rresult:{result}")
+        #         results.extend(result)
+        #         pbar.update(1)
 
     return results
 
