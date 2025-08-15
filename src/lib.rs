@@ -23,7 +23,7 @@ fn lektos(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Metadata>()?;
     m.add_class::<FieldResult>()?;
 
-    // m.add_function(wrap_pyfunction!(extractor_runner, m)?)?;
+    m.add_function(wrap_pyfunction!(core_extractor_runner, m)?)?;
 
     Ok(())
 }

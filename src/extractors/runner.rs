@@ -7,13 +7,13 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::{Ok, Result};
+use anyhow::{ Result};
 use arrow::{
     array::{ArrayRef, RecordBatch, StringArray},
     datatypes::{DataType, Field, Schema}, ipc::writer::StreamWriter,
 };
 use dotenv::dotenv;
-use pyo3::prelude::*;
+use pyo3::{ffi::PyByteArrayObject, prelude::*, types::PyBytes};
 use qdrant_client::{Qdrant, qdrant::PointsOperationResponse};
 use warc::{Record, StreamingBody, WarcHeader, WarcReader};
 
@@ -45,8 +45,8 @@ use std::net::TcpListener;
 // "storage_area":"path/to/data/"
 // }
 
-pub async fn core_extractor_runner(warc_path: &str) -> Result<Vec<Summary>> {
-    println!("heelo theere");
+#[pyfunction]
+pub  fn core_extractor_runner(py:Python<'_>,warc_path: &str) -> PyResult<Py<PyBytes>>{
     let blog_to_embed: Vec<QdrantdbObject> = vec![
         QdrantdbObject {
             id: "abc123".to_string(),
@@ -164,7 +164,6 @@ pub async fn core_extractor_runner(warc_path: &str) -> Result<Vec<Summary>> {
     use arrow::array::{ArrayRef, StringArray};
     use std::sync::Arc;
 
-    println!("asdf");
     let id: ArrayRef = Arc::new(StringArray::from_iter_values(
         blog_to_embed.iter().map(|b| b.id.as_str()),
     ));
@@ -194,50 +193,31 @@ pub async fn core_extractor_runner(warc_path: &str) -> Result<Vec<Summary>> {
     let arrays: Vec<ArrayRef> = vec![id, content, url, image_url, title, author, date, publisher];
 
     let record_batch =
-        RecordBatch::try_new(schema.clone(), arrays)?;
+        RecordBatch::try_new(schema.clone(), arrays).unwrap();
     println!("Real batched:{:?}", record_batch);
 
     // trying to send for python 
     let mut buffer = Vec::new();
-    let mut object_reciver = StreamWriter::try_new(buffer, &schema)?;
+    let mut object_reciver = StreamWriter::try_new(&mut buffer, &schema).unwrap();
     {
     object_reciver.write(&record_batch);
     object_reciver.finish();
-    
 
     }
 
 
-    // 
+    Ok(PyBytes::new(py, &buffer).into())
 
 
-    // Using Tcp
 
-    let listener = TcpListener::bind("127.0.0.1:4000")?;
-    for stream in listener.incoming(){
-        // here pyton client will be able to connect here I think
-               let mut stream = stream?;
-        println!("Python client connected!");
+    // let client = Qdrant::from_url(&quadrant_url)
+    //     .api_key(quadrant_api)
+    //     .build()
+    //     .unwrap();
+    // // batch embeding should return what it has already done right ?
+    // let result = bactch_embeding(&blog_to_embed, &client).await?;
 
-        // Wrap stream in a buffered writer
-        let buf_writer = BufWriter::new(&mut stream);
-        let mut writer = StreamWriter::try_new(buf_writer, &schema).unwrap();
-
-        writer.write(&record_batch).unwrap();
-        writer.finish().unwrap();
-        println!("Batch sent to Python client");
-
-        break;
-        
-    }
-    let client = Qdrant::from_url(&quadrant_url)
-        .api_key(quadrant_api)
-        .build()
-        .unwrap();
-    // batch embeding should return what it has already done right ?
-    let result = bactch_embeding(&blog_to_embed, &client).await?;
-
-    Ok(result)
+    // Ok(result)
 }
 
 

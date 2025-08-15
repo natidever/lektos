@@ -58,19 +58,31 @@ def batch_process_warcs(warc_directory, max_workers=8):
 
 HOST="127.0.0.1"
 PORT=4000
+import lektos
+import pyarrow as pa
+import io
 
 def main ():
+    # Step 1: Call Rust function
+    arrow_bytes = lektos.core_extractor_runner("path")
 
-    with socket.create_connection((HOST,PORT)) as sock :
-        print("Connected to Rust server!")
+    # Step 2: Read in-memory Arrow data
+    buf = io.BytesIO(arrow_bytes)
+    reader = pa.ipc.open_stream(buf)
+    table = reader.read_all()
 
-        # Wrap socket as file-like object for pyarrow
-        reader = sock.makefile('rb')
-        stream = ipc.open_stream(reader)
+    print(table)
 
-        for batch in stream:
-            print("Received RecordBatch:")
-            print(batch)
+    # with socket.create_connection((HOST,PORT)) as sock :
+    #     print("Connected to Rust server!")
+
+    #     # Wrap socket as file-like object for pyarrow
+    #     reader = sock.makefile('rb')
+    #     stream = ipc.open_stream(reader)
+
+    #     for batch in stream:
+    #         print("Received RecordBatch:")
+    #         print(batch)
 
 if __name__ == "__main__":
     main()
