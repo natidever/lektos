@@ -4,7 +4,7 @@ use std::{
     env,
     fs::{self, File},
     io::{BufRead, BufReader, BufWriter},
-    sync::Arc,
+    sync::Arc, u8,
 };
 
 use anyhow::{ Result};
@@ -45,8 +45,8 @@ use std::net::TcpListener;
 // "storage_area":"path/to/data/"
 // }
 
-#[pyfunction]
-pub  fn core_extractor_runner(py:Python<'_>,warc_path: &str) -> PyResult<Py<PyBytes>>{
+pub  fn extractor_runner(py:Python<'_>,warc_path: &str) -> Result<Vec<u8>>{
+    // PyResult<Py<PyBytes>>{
     let blog_to_embed: Vec<QdrantdbObject> = vec![
         QdrantdbObject {
             id: "abc123".to_string(),
@@ -206,7 +206,7 @@ pub  fn core_extractor_runner(py:Python<'_>,warc_path: &str) -> PyResult<Py<PyBy
     }
 
 
-    Ok(PyBytes::new(py, &buffer).into())
+    Ok(buffer)
 
 
 
