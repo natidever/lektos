@@ -3,14 +3,14 @@
 use std::{
     env,
     fs::{self, File},
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, BufWriter},
     sync::Arc,
 };
 
 use anyhow::{Ok, Result};
 use arrow::{
-    array::{ArrayRef, StringArray},
-    datatypes::{DataType, Field, Schema},
+    array::{ArrayRef, RecordBatch, StringArray},
+    datatypes::{DataType, Field, Schema}, ipc::writer::StreamWriter,
 };
 use dotenv::dotenv;
 use pyo3::prelude::*;
@@ -33,6 +33,9 @@ use crate::{
     },
 };
 
+
+use std::net::TcpListener;
+
 // This core extractor is used to store embeding and  qdrant db
 // or just the right way to communicate in the python side is to return analysis
 // like {
@@ -43,6 +46,7 @@ use crate::{
 // }
 
 pub async fn core_extractor_runner(warc_path: &str) -> Result<Vec<Summary>> {
+    println!("heelo theere");
     let blog_to_embed: Vec<QdrantdbObject> = vec![
         QdrantdbObject {
             id: "abc123".to_string(),
@@ -96,20 +100,20 @@ pub async fn core_extractor_runner(warc_path: &str) -> Result<Vec<Summary>> {
 
     dotenv().ok();
 
-    let mut blog_to_embed: Vec<QdrantdbObject> = Vec::new();
+    // let mut blog_to_embed: Vec<QdrantdbObject> = Vec::new();
 
-    let vist_url_tracker = UrlVisitTracker::new();
+    // let vist_url_tracker = UrlVisitTracker::new();
 
-    let feed_url_validator = FeedUrlValidator::new()?;
+    // let feed_url_validator = FeedUrlValidator::new()?;
 
-    let mut reader = WarcReader::from_path_gzip(warc_path)?;
+    // let mut reader = WarcReader::from_path_gzip(warc_path)?;
 
-    let mut stream_iter = reader.stream_records();
+    // let mut stream_iter = reader.stream_records();
 
-    let mut blog_count = 0;
-    const MAX_BLOGS: usize = 500;
+    // let mut blog_count = 0;
+    // const MAX_BLOGS: usize = 500;
 
-    let mut urls: Vec<String> = Vec::new();
+    // let mut urls: Vec<String> = Vec::new();
 
     // while let Some(record_result) = stream_iter.next_item() {
     //     let record = record_result?;
@@ -159,9 +163,12 @@ pub async fn core_extractor_runner(warc_path: &str) -> Result<Vec<Summary>> {
 
     use arrow::array::{ArrayRef, StringArray};
     use std::sync::Arc;
+
+    println!("asdf");
     let id: ArrayRef = Arc::new(StringArray::from_iter_values(
         blog_to_embed.iter().map(|b| b.id.as_str()),
     ));
+
     let content: ArrayRef = Arc::new(StringArray::from_iter_values(
         blog_to_embed.iter().map(|b| b.content.as_str()),
     ));
@@ -184,7 +191,45 @@ pub async fn core_extractor_runner(warc_path: &str) -> Result<Vec<Summary>> {
         blog_to_embed.iter().map(|b| b.metadata.publisher.as_str()),
     ));
 
-    println!("sschma:{:?}", schema);
+    let arrays: Vec<ArrayRef> = vec![id, content, url, image_url, title, author, date, publisher];
+
+    let record_batch =
+        RecordBatch::try_new(schema.clone(), arrays)?;
+    println!("Real batched:{:?}", record_batch);
+
+    // trying to send for python 
+    let mut buffer = Vec::new();
+    let mut object_reciver = StreamWriter::try_new(buffer, &schema)?;
+    {
+    object_reciver.write(&record_batch);
+    object_reciver.finish();
+    
+
+    }
+
+
+    // 
+
+
+    // Using Tcp
+
+    let listener = TcpListener::bind("127.0.0.1:4000")?;
+    for stream in listener.incoming(){
+        // here pyton client will be able to connect here I think
+               let mut stream = stream?;
+        println!("Python client connected!");
+
+        // Wrap stream in a buffered writer
+        let buf_writer = BufWriter::new(&mut stream);
+        let mut writer = StreamWriter::try_new(buf_writer, &schema).unwrap();
+
+        writer.write(&record_batch).unwrap();
+        writer.finish().unwrap();
+        println!("Batch sent to Python client");
+
+        break;
+        
+    }
     let client = Qdrant::from_url(&quadrant_url)
         .api_key(quadrant_api)
         .build()
@@ -194,6 +239,31 @@ pub async fn core_extractor_runner(warc_path: &str) -> Result<Vec<Summary>> {
 
     Ok(result)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 fn proccess_and_push<B: BufRead>(
     record: Record<StreamingBody<'_, B>>,
