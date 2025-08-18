@@ -6,6 +6,18 @@ import lektos
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List
+from google import genai
+from google.genai import types
+from dotenv import load_dotenv
+import os
+
+from app.qdrant.embedings import TEST_EMBEDING
+from qdrant_client import QdrantClient,AsyncQdrantClient
+import numpy as np
+from qdrant_client.models import PointStruct
+from qdrant_client.models import VectorParams, Distance
+
+
 class StoredBlog(BaseModel):
     id:str
     content:List[float]
@@ -17,7 +29,7 @@ class StoredBlog(BaseModel):
     publisher:str
 
 
-ray.init()
+# ray.init()
 
 # --- Step 1: Rust extraction via FFI (simulated here as a function returning bytes) ---
 # You'd actually bind this with pyo3/maturin, etc.
@@ -57,7 +69,7 @@ def embed_worker(table: pa.Table)->List[StoredBlog]:
     result:List[StoredBlog] = []
 
     for i in range(len(id)):
-        embedding = fake_embed(content[i])
+        embedding = embed(content[i])
 
         
         blog = StoredBlog(
@@ -80,17 +92,69 @@ def embed_worker(table: pa.Table)->List[StoredBlog]:
     embeding and meta data  """
     return result
 
-def fake_embed(text: str):
-    # placeholder: real embedding call to Gemini or OpenAI
-    return [0.1, 0.2, 0.3]
+def embed(text: str):
+    # if we're going to use gemni for embeding with 768 size batching 
+    # has no meaning we'll hit the rate limit wiht just one batch(with two size)
+    
+    load_dotenv()
+    GEMNI_API_KEY =os.getenv("GEMINI_API_KEY_6")
+    http_options = types.HttpOptions(
+    async_client_args={},
+    )
+
+    client = genai.Client(
+        api_key=GEMNI_API_KEY,
+        http_options=http_options
+    )
+         
+    
+    result = client.models.embed_content(
+        model="gemini-embedding-001",
+        contents=text,
+        config=types.EmbedContentConfig(output_dimensionality=768,task_type="SEMANTIC_SIMILARITY"),
+    )
+    
+
+    return result.embeddings[0].values
 
 # --- Step 3: Store ---
-@ray.remote
-def store_worker(embeddings, metadata=None):
-    """Store embeddings in Qdrant (or elsewhere)."""
-    # mock 
-    print(f"Storing {len(embeddings)} embeddings")
+# @ray.remote
+async def store_worker(blog:StoredBlog):
+
+
+    load_dotenv()
+    QDRANT_API_KEY=os.getenv("QUADRANT_API_KEY")
+    QDRANT_URL =  os.getenv("QUADRANT_URL")
+
+    client = AsyncQdrantClient(url=QDRANT_URL,api_key=QDRANT_API_KEY,prefer_grpc=True)
+    
+    point=create_point(blog)
+    d = await client.upsert(
+        collection_name="blogs",
+        points=[point]
+
+    )
+    print(f"upserting result{d}")
+
+
     return True
+
+
+def create_point(blog:StoredBlog)->PointStruct:
+
+    return PointStruct(
+        id="d30cedb4-ecf2-4a99-bf96-0b9df3c4c328",
+        vector=blog.content,
+        payload={
+            "author":blog.author,
+            "title":blog.title,
+            "date":blog.date,
+            "publisher":blog.publisher,
+            "image_url":blog.image_url,
+            "url":blog.url
+
+        }
+    )
 
 
 def process_warcs(warc_files):
@@ -114,6 +178,19 @@ def process_warcs(warc_files):
 
 # just a test call 
 if __name__ == "__main__":
-    warc_files = ["warc1.warc", "warc2.warc"]
-    results = process_warcs(warc_files)
-    print("Pipeline finished:", results)
+    import asyncio
+    blog = StoredBlog(
+        content=[23,2323,23],
+        id="test",
+        author="blog.author_test",
+        title="blog.title_test",
+        date=datetime.now(),
+        publisher="blog.publisher_Test",
+        image_url="blog.image_url_test",
+        url="blog.url_test"
+
+    )
+    asyncio.run(store_worker(blog))
+    # warc_files = ["warc1.warc", "warc2.warc"]
+    # results = process_warcs(warc_files)
+    # print("Pipeline finished:", results)

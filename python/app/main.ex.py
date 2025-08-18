@@ -1,6 +1,7 @@
 # there will function that is able to process a warc file then i will call ray.process() use it 3 ocre
 
 from pathlib import Path
+
 # import lektos
 import ray
 import socket
@@ -13,6 +14,7 @@ import lektos
 import pyarrow as pa
 import io
 
+
 @ray.remote
 def process_single_warc(warc_path):
     """Ray task to process one WARC file"""
@@ -22,20 +24,18 @@ def process_single_warc(warc_path):
         reader = pa.ipc.open_stream(buf)
         table = reader.read_all()
 
-
-        # for 
+        # for
 
         # Step 2: Read in-memory Arrow data
         # chang all table list of mad thi
         urls = table.column("url")
-        urls.to_pylist() 
+        urls.to_pylist()
         result = []
         for batch in table.to_batches():
             print(f"Table to batch :{batch}")
             # for row in batch.to_pylist():
             #     # print(row)
             #     result.extend(row)
-
 
         # arrow_bytes = lektos.core_extractor_runner("path")
 
@@ -60,11 +60,11 @@ def batch_process_warcs(warc_directory, max_workers=8):
             futures = [process_single_warc.remote(str(f.absolute())) for f in chunk]
 
             while futures:
-                    done, futures = ray.wait(futures, timeout=5.0)
-                    for result in ray.get(done):
-                        # print(f"Result:{result}")
-                        results.extend(result)
-                        pbar.update(1)
+                done, futures = ray.wait(futures, timeout=5.0)
+                for result in ray.get(done):
+                    # print(f"Result:{result}")
+                    results.extend(result)
+                    pbar.update(1)
 
     return results
 
@@ -75,9 +75,6 @@ def batch_process_warcs(warc_directory, max_workers=8):
 #         max_workers=7,  # Adjust based on your cluster
 #     )
 #     print(f"Total URLs extracted: {len(all_urls)}")
-
-
-
 
 
 # HOST="127.0.0.1"
@@ -93,7 +90,7 @@ def batch_process_warcs(warc_directory, max_workers=8):
 #     table = reader.read_all()
 #     # chang all table list of mad thi
 #     urls = table.column("url")
-#     urls.to_pylist() 
+#     urls.to_pylist()
 #     for batch in table.to_batches():
 #         for row in batch.to_pylist():
 #             print(row)
@@ -114,10 +111,11 @@ def batch_process_warcs(warc_directory, max_workers=8):
 #     main()
 
 
-# Here we hae the data what left with is 
+# Here we hae the data what left with is
 
 # 1.Batch process in one local machine in python
 # 2.
+
 
 def main():
     value = lektos.core_extractor_runner("warc_path")
@@ -125,20 +123,16 @@ def main():
     buf = io.BytesIO(value)
     reader = pa.ipc.open_stream(buf)
     table = reader.read_all()
-    
 
     # df=table.to_pandas
     # Second batch after (File batch processign)
-        #Assuming there we areldy got he blogs  
+    # Assuming there we areldy got he blogs
     # CHUNK_SIZE=23
     # SIZE_OF_CURRENT_TABLE=40
 
     for table in table.to_batches():
         table.row()
-        
-  
 
-  
     # for idx, row in df.iterrows():
     #         # LET US SAY WE HAVE 23 REOW(MEANIGN 20 BLOG)
     #         # blog_to_embed.add(row)
@@ -146,13 +140,6 @@ def main():
     # for i in range(0,len(blog_to_emebd),CHUNK_SIZE):
     #    emebding= get_emebding(blog)
     #    qdrant_insert=insert_qdrant(embeding)
-
-
-
-
-
-
-
 
 
 main()
