@@ -35,6 +35,5 @@ fn lektos(m: &Bound<'_, PyModule>) -> PyResult<()> {
 #[pyfunction]
 fn core_extractor_runner(py:Python<'_>,warc_file_path:&str)->PyResult<Py<PyBytes>>{
     let buffer=extractor_runner(py, warc_file_path)?;
-    
     Ok(PyBytes::new(py,&buffer).into())
 }

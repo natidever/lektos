@@ -46,7 +46,6 @@ use std::net::TcpListener;
 // }
 
 pub  fn extractor_runner(py:Python<'_>,warc_path: &str) -> Result<Vec<u8>>{
-    // PyResult<Py<PyBytes>>{
     let blog_to_embed: Vec<QdrantdbObject> = vec![
         QdrantdbObject {
             id: "abc123".to_string(),
@@ -72,32 +71,104 @@ pub  fn extractor_runner(py:Python<'_>,warc_path: &str) -> Result<Vec<u8>>{
                 publisher: "Publisher B".to_string(),
             },
         },
-        QdrantdbObject {
-            id: "ghi789".to_string(),
-            content: "Third blog content is here.".to_string(),
-            metadata: DbMetadata {
-                url: "https://example.com/blog3".to_string(),
-                image_url: "https://example.com/img3.jpg".to_string(),
-                title: "Third Blog".to_string(),
-                author: "Charlie".to_string(),
-                date: "2025-08-12".to_string(),
-                publisher: "Publisher C".to_string(),
-            },
-        },
-        QdrantdbObject {
-            id: "jkl012".to_string(),
-            content: "Fourth blog with some unique content.".to_string(),
-            metadata: DbMetadata {
-                url: "https://example.com/blog4".to_string(),
-                image_url: "https://example.com/img4.jpg".to_string(),
-                title: "Fourth Blog".to_string(),
-                author: "Dana".to_string(),
-                date: "2025-08-11".to_string(),
-                publisher: "Publisher D".to_string(),
-            },
-        },
+        // QdrantdbObject {
+        //     id: "ghi789".to_string(),
+        //     content: "Third blog content is here.".to_string(),
+        //     metadata: DbMetadata {
+        //         url: "https://example.com/blog3".to_string(),
+        //         image_url: "https://example.com/img3.jpg".to_string(),
+        //         title: "Third Blog".to_string(),
+        //         author: "Charlie".to_string(),
+        //         date: "2025-08-12".to_string(),
+        //         publisher: "Publisher C".to_string(),
+        //     },
+        // },
+        // QdrantdbObject {
+        //     id: "jkl012".to_string(),
+        //     content: "Fourth blog with some unique content.".to_string(),
+        //     metadata: DbMetadata {
+        //         url: "https://example.com/blog4".to_string(),
+        //         image_url: "https://example.com/img4.jpg".to_string(),
+        //         title: "Fourth Blog".to_string(),
+        //         author: "Dana".to_string(),
+        //         date: "2025-08-11".to_string(),
+        //         publisher: "Publisher D".to_string(),
+        //     },
+        // },
+        // QdrantdbObject {
+        //     id: "jkl0121sss".to_string(),
+        //     content: "Fourth blog with some unique content.".to_string(),
+        //     metadata: DbMetadata {
+        //         url: "https://example.com/blog4".to_string(),
+        //         image_url: "https://example.com/img4.jpg".to_string(),
+        //         title: "Fourth Blog".to_string(),
+        //         author: "Dana".to_string(),
+        //         date: "2025-08-11".to_string(),
+        //         publisher: "Publisher D".to_string(),
+        //     },
+        // },
+        // QdrantdbObject {
+        //     id: "jkl0121sss".to_string(),
+        //     content: "Fourth blog with some unique content.".to_string(),
+        //     metadata: DbMetadata {
+        //         url: "https://example.com/blog4".to_string(),
+        //         image_url: "https://example.com/img4.jpg".to_string(),
+        //         title: "Fourth Blog".to_string(),
+        //         author: "Dana".to_string(),
+        //         date: "2025-08-11".to_string(),
+        //         publisher: "Publisher D".to_string(),
+        //     },
+        // },
+        
+        // QdrantdbObject {
+        //     id: "jkl0121sss".to_string(),
+        //     content: "Fourth blog with some unique content.".to_string(),
+        //     metadata: DbMetadata {
+        //         url: "https://example.com/blog4".to_string(),
+        //         image_url: "https://example.com/img4.jpg".to_string(),
+        //         title: "Fourth Blog".to_string(),
+        //         author: "Dana".to_string(),
+        //         date: "2025-08-11".to_string(),
+        //         publisher: "Publisher D".to_string(),
+        //     },
+        // },QdrantdbObject {
+        //     id: "jkl0121sss".to_string(),
+        //     content: "Fourth blog with some unique content.".to_string(),
+        //     metadata: DbMetadata {
+        //         url: "https://example.com/blog4".to_string(),
+        //         image_url: "https://example.com/img4.jpg".to_string(),
+        //         title: "Fourth Blog".to_string(),
+        //         author: "Dana".to_string(),
+        //         date: "2025-08-11".to_string(),
+        //         publisher: "Publisher D".to_string(),
+        //     },
+        // },QdrantdbObject {
+        //     id: "jkl0121sss".to_string(),
+        //     content: "Fourth blog with some unique content.".to_string(),
+        //     metadata: DbMetadata {
+        //         url: "https://example.com/blog4".to_string(),
+        //         image_url: "https://example.com/img4.jpg".to_string(),
+        //         title: "Fourth Blog".to_string(),
+        //         author: "Dana".to_string(),
+        //         date: "2025-08-11".to_string(),
+        //         publisher: "Publisher D".to_string(),
+        //     },
+        // },QdrantdbObject {
+        //     id: "jkl0121sss".to_string(),
+        //     content: "Fourth blog with some unique content.".to_string(),
+        //     metadata: DbMetadata {
+        //         url: "https://example.com/blog4".to_string(),
+        //         image_url: "https://example.com/img4.jpg".to_string(),
+        //         title: "Fourth Blog".to_string(),
+        //         author: "Dana".to_string(),
+        //         date: "2025-08-11".to_string(),
+        //         publisher: "Publisher D".to_string(),
+        //     },
+        // }
     ];
-
+        
+        
+     
     dotenv().ok();
 
     // let mut blog_to_embed: Vec<QdrantdbObject> = Vec::new();
@@ -194,7 +265,7 @@ pub  fn extractor_runner(py:Python<'_>,warc_path: &str) -> Result<Vec<u8>>{
 
     let record_batch =
         RecordBatch::try_new(schema.clone(), arrays).unwrap();
-    println!("Real batched:{:?}", record_batch);
+    // println!("Real batched:{:?}", record_batch);
 
     // trying to send for python 
     let mut buffer = Vec::new();

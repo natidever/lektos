@@ -9,17 +9,41 @@ import pyarrow.ipc as ipc
 from tqdm import tqdm
 
 
-#
-# @ray.remote
-# def process_single_warc(warc_path):
-#     """Ray task to process one WARC file"""
-#     try:
-#         value = lektos.extractor_runner(warc_path)
-#         print(f"Lektos Runner returns :{value}")
-#         return value
-#     except Exception as e:
-#         print(f"Exception:P{e}")
-#         return None, str(e)
+import lektos
+import pyarrow as pa
+import io
+
+@ray.remote
+def process_single_warc(warc_path):
+    """Ray task to process one WARC file"""
+    try:
+        value = lektos.core_extractor_runner(warc_path)
+        buf = io.BytesIO(value)
+        reader = pa.ipc.open_stream(buf)
+        table = reader.read_all()
+
+
+        # for 
+
+        # Step 2: Read in-memory Arrow data
+        # chang all table list of mad thi
+        urls = table.column("url")
+        urls.to_pylist() 
+        result = []
+        for batch in table.to_batches():
+            print(f"Table to batch :{batch}")
+            # for row in batch.to_pylist():
+            #     # print(row)
+            #     result.extend(row)
+
+
+        # arrow_bytes = lektos.core_extractor_runner("path")
+
+        # print(f"Lektos Runner returns :{dir(table)}")
+        return result
+    except Exception as e:
+        print(f"Exception:P{e}")
+        return None, str(e)
 
 
 def batch_process_warcs(warc_directory, max_workers=8):
@@ -27,20 +51,20 @@ def batch_process_warcs(warc_directory, max_workers=8):
     print(f"Found {len(warc_files)} WARC files to process")
 
     results = []
-    with tqdm(total=len(warc_files)) as pbar:
-        chunk_size = max_workers * 5
-        for i in range(0, len(warc_files), chunk_size):
+    with tqdm(30) as pbar:
+        chunk_size = max_workers * 2
+        for i in range(0, 30, chunk_size):
             chunk = warc_files[i : i + chunk_size]
             # procees_extract_blog("her")
 
             futures = [process_single_warc.remote(str(f.absolute())) for f in chunk]
 
-        while futures:
-            done, futures = ray.wait(futures, timeout=5.0)
-            for result in ray.get(done):
-                print(f"rresult:{result}")
-                results.extend(result)
-                pbar.update(1)
+            while futures:
+                    done, futures = ray.wait(futures, timeout=5.0)
+                    for result in ray.get(done):
+                        # print(f"Result:{result}")
+                        results.extend(result)
+                        pbar.update(1)
 
     return results
 
@@ -48,7 +72,7 @@ def batch_process_warcs(warc_directory, max_workers=8):
 # if __name__ == "__main__":
 #     all_urls = batch_process_warcs(
 #         "/home/natnael/projects/lektos/src/common_crawl_2025-26_warcfiles/",
-#         max_workers=8,  # Adjust based on your cluster
+#         max_workers=7,  # Adjust based on your cluster
 #     )
 #     print(f"Total URLs extracted: {len(all_urls)}")
 
@@ -56,35 +80,79 @@ def batch_process_warcs(warc_directory, max_workers=8):
 
 
 
-HOST="127.0.0.1"
-PORT=4000
-import lektos
-import pyarrow as pa
-import io
+# HOST="127.0.0.1"
+# PORT=4000
 
-def main ():
-    # Step 1: Call Rust function
-    arrow_bytes = lektos.core_extractor_runner("path")
+# def main ():
+#     # Step 1: Call Rust function
+#     arrow_bytes = lektos.core_extractor_runner("path")
 
-    # Step 2: Read in-memory Arrow data
-    buf = io.BytesIO(arrow_bytes)
+#     # Step 2: Read in-memory Arrow data
+#     buf = io.BytesIO(arrow_bytes)
+#     reader = pa.ipc.open_stream(buf)
+#     table = reader.read_all()
+#     # chang all table list of mad thi
+#     urls = table.column("url")
+#     urls.to_pylist() 
+#     for batch in table.to_batches():
+#         for row in batch.to_pylist():
+#             print(row)
+
+
+#     # with socket.create_connection((HOST,PORT)) as sock :
+#     #     print("Connected to Rust server!")
+
+#     #     # Wrap socket as file-like object for pyarrow
+#     #     reader = sock.makefile('rb')
+#     #     stream = ipc.open_stream(reader)
+
+#     #     for batch in stream:
+#     #         print("Received RecordBatch:")
+#     #         print(batch)
+
+# if __name__ == "__main__":
+#     main()
+
+
+# Here we hae the data what left with is 
+
+# 1.Batch process in one local machine in python
+# 2.
+
+def main():
+    value = lektos.core_extractor_runner("warc_path")
+
+    buf = io.BytesIO(value)
     reader = pa.ipc.open_stream(buf)
     table = reader.read_all()
+    
 
-    print(table)
+    # df=table.to_pandas
+    # Second batch after (File batch processign)
+        #Assuming there we areldy got he blogs  
+    # CHUNK_SIZE=23
+    # SIZE_OF_CURRENT_TABLE=40
 
-    # with socket.create_connection((HOST,PORT)) as sock :
-    #     print("Connected to Rust server!")
+    for table in table.to_batches():
+        table.row()
+        
+  
 
-    #     # Wrap socket as file-like object for pyarrow
-    #     reader = sock.makefile('rb')
-    #     stream = ipc.open_stream(reader)
-
-    #     for batch in stream:
-    #         print("Received RecordBatch:")
-    #         print(batch)
-
-if __name__ == "__main__":
-    main()
+  
+    # for idx, row in df.iterrows():
+    #         # LET US SAY WE HAVE 23 REOW(MEANIGN 20 BLOG)
+    #         # blog_to_embed.add(row)
+    #         print(row["title"], row["content"])
+    # for i in range(0,len(blog_to_emebd),CHUNK_SIZE):
+    #    emebding= get_emebding(blog)
+    #    qdrant_insert=insert_qdrant(embeding)
 
 
+
+
+
+
+
+
+
+main()
