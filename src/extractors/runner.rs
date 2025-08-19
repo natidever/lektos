@@ -36,186 +36,67 @@ use crate::{
 
 use std::net::TcpListener;
 
-// This core extractor is used to store embeding and  qdrant db
-// or just the right way to communicate in the python side is to return analysis
-// like {
-// "blog_analyzed":320,
-// "successsfully_stored_in_qdrant":410
-// "failed_to_store_in_db":2
-// "storage_area":"path/to/data/"
-// }
 
 pub  fn extractor_runner(py:Python<'_>,warc_path: &str) -> Result<Vec<u8>>{
-    let blog_to_embed: Vec<QdrantdbObject> = vec![
-        QdrantdbObject {
-            id: "abc123".to_string(),
-            content: "This is the first blog content.".to_string(),
-            metadata: DbMetadata {
-                url: "https://example.com/blog1".to_string(),
-                image_url: "https://example.com/img1.jpg".to_string(),
-                title: "First Blog".to_string(),
-                author: "Alice".to_string(),
-                date: "2025-08-14".to_string(),
-                publisher: "Publisher A".to_string(),
-            },
-        },
-        QdrantdbObject {
-            id: "def456".to_string(),
-            content: "Second blog has different content.".to_string(),
-            metadata: DbMetadata {
-                url: "https://example.com/blog2".to_string(),
-                image_url: "https://example.com/img2.jpg".to_string(),
-                title: "Second Blog".to_string(),
-                author: "Bob".to_string(),
-                date: "2025-08-13".to_string(),
-                publisher: "Publisher B".to_string(),
-            },
-        },
-        // QdrantdbObject {
-        //     id: "ghi789".to_string(),
-        //     content: "Third blog content is here.".to_string(),
-        //     metadata: DbMetadata {
-        //         url: "https://example.com/blog3".to_string(),
-        //         image_url: "https://example.com/img3.jpg".to_string(),
-        //         title: "Third Blog".to_string(),
-        //         author: "Charlie".to_string(),
-        //         date: "2025-08-12".to_string(),
-        //         publisher: "Publisher C".to_string(),
-        //     },
-        // },
-        // QdrantdbObject {
-        //     id: "jkl012".to_string(),
-        //     content: "Fourth blog with some unique content.".to_string(),
-        //     metadata: DbMetadata {
-        //         url: "https://example.com/blog4".to_string(),
-        //         image_url: "https://example.com/img4.jpg".to_string(),
-        //         title: "Fourth Blog".to_string(),
-        //         author: "Dana".to_string(),
-        //         date: "2025-08-11".to_string(),
-        //         publisher: "Publisher D".to_string(),
-        //     },
-        // },
-        // QdrantdbObject {
-        //     id: "jkl0121sss".to_string(),
-        //     content: "Fourth blog with some unique content.".to_string(),
-        //     metadata: DbMetadata {
-        //         url: "https://example.com/blog4".to_string(),
-        //         image_url: "https://example.com/img4.jpg".to_string(),
-        //         title: "Fourth Blog".to_string(),
-        //         author: "Dana".to_string(),
-        //         date: "2025-08-11".to_string(),
-        //         publisher: "Publisher D".to_string(),
-        //     },
-        // },
-        // QdrantdbObject {
-        //     id: "jkl0121sss".to_string(),
-        //     content: "Fourth blog with some unique content.".to_string(),
-        //     metadata: DbMetadata {
-        //         url: "https://example.com/blog4".to_string(),
-        //         image_url: "https://example.com/img4.jpg".to_string(),
-        //         title: "Fourth Blog".to_string(),
-        //         author: "Dana".to_string(),
-        //         date: "2025-08-11".to_string(),
-        //         publisher: "Publisher D".to_string(),
-        //     },
-        // },
-        
-        // QdrantdbObject {
-        //     id: "jkl0121sss".to_string(),
-        //     content: "Fourth blog with some unique content.".to_string(),
-        //     metadata: DbMetadata {
-        //         url: "https://example.com/blog4".to_string(),
-        //         image_url: "https://example.com/img4.jpg".to_string(),
-        //         title: "Fourth Blog".to_string(),
-        //         author: "Dana".to_string(),
-        //         date: "2025-08-11".to_string(),
-        //         publisher: "Publisher D".to_string(),
-        //     },
-        // },QdrantdbObject {
-        //     id: "jkl0121sss".to_string(),
-        //     content: "Fourth blog with some unique content.".to_string(),
-        //     metadata: DbMetadata {
-        //         url: "https://example.com/blog4".to_string(),
-        //         image_url: "https://example.com/img4.jpg".to_string(),
-        //         title: "Fourth Blog".to_string(),
-        //         author: "Dana".to_string(),
-        //         date: "2025-08-11".to_string(),
-        //         publisher: "Publisher D".to_string(),
-        //     },
-        // },QdrantdbObject {
-        //     id: "jkl0121sss".to_string(),
-        //     content: "Fourth blog with some unique content.".to_string(),
-        //     metadata: DbMetadata {
-        //         url: "https://example.com/blog4".to_string(),
-        //         image_url: "https://example.com/img4.jpg".to_string(),
-        //         title: "Fourth Blog".to_string(),
-        //         author: "Dana".to_string(),
-        //         date: "2025-08-11".to_string(),
-        //         publisher: "Publisher D".to_string(),
-        //     },
-        // },QdrantdbObject {
-        //     id: "jkl0121sss".to_string(),
-        //     content: "Fourth blog with some unique content.".to_string(),
-        //     metadata: DbMetadata {
-        //         url: "https://example.com/blog4".to_string(),
-        //         image_url: "https://example.com/img4.jpg".to_string(),
-        //         title: "Fourth Blog".to_string(),
-        //         author: "Dana".to_string(),
-        //         date: "2025-08-11".to_string(),
-        //         publisher: "Publisher D".to_string(),
-        //     },
-        // }
-    ];
+
         
         
      
     dotenv().ok();
 
-    // let mut blog_to_embed: Vec<QdrantdbObject> = Vec::new();
+    let mut blog_to_embed: Vec<QdrantdbObject> = Vec::new();
 
-    // let vist_url_tracker = UrlVisitTracker::new();
+    let vist_url_tracker = UrlVisitTracker::new();
 
-    // let feed_url_validator = FeedUrlValidator::new()?;
+    let feed_url_validator = FeedUrlValidator::new()?;
 
-    // let mut reader = WarcReader::from_path_gzip(warc_path)?;
+    let mut reader = WarcReader::from_path_gzip(warc_path)?;
 
-    // let mut stream_iter = reader.stream_records();
+    let mut stream_iter = reader.stream_records();
 
-    // let mut blog_count = 0;
-    // const MAX_BLOGS: usize = 500;
+    let mut blog_count = 0;
+    const MAX_BLOGS: usize = 500;
 
-    // let mut urls: Vec<String> = Vec::new();
+    let mut urls: Vec<String> = Vec::new();
 
-    // while let Some(record_result) = stream_iter.next_item() {
-    //     let record = record_result?;
-    //     // Extract URL
-    //     let url = record
-    //         .header(WarcHeader::TargetURI)
-    //         .map(|s| s.to_string())
-    //         .unwrap_or_default();
+    while let Some(record_result) = stream_iter.next_item() {
+        let record = record_result?;
+        // Extract URL
+        let url = record
+            .header(WarcHeader::TargetURI)
+            .map(|s| s.to_string())
+            .unwrap_or_default();
 
-    //     // Check WARC type is response (contains actual content) which is the html
-    //     if record.header(WarcHeader::WarcType).map(|s| s.to_string())
-    //         != Some("response".to_string())
-    //     {
-    //         continue;
-    //     }
-    //     if vist_url_tracker.is_url_visited(&url) {
-    //         continue;
-    //     }
+        // Check WARC type is response (contains actual content) which is the html
+        if record.header(WarcHeader::WarcType).map(|s| s.to_string())
+            != Some("response".to_string())
+        {
+            continue;
+        }
 
-    //     if feed_url_validator.is_from_feed(&url)? {
-    //         // the url is blog since it came from feeds
-    //         proccess_and_push(record, &mut blog_to_embed, &url);
-    //     } else {
-    //         if is_blog_url(&url) {
-    //             proccess_and_push(record, &mut blog_to_embed, &url);
-    //         } else {
-    //             // do nothin
-    //             // the url is not blog
-    //         }
-    //     }
-    // }
+        if is_blog_url(&url) {
+                proccess_and_push(record, &mut blog_to_embed, &url);
+            } else {
+                // do nothin
+                // the url is not blog
+            }
+            
+        // if vist_url_tracker.is_url_visited(&url) {
+        //     continue;
+        // }
+
+        // if feed_url_validator.is_from_feed(&url)? {
+        //     // the url is blog since it came from feeds
+        //     proccess_and_push(record, &mut blog_to_embed, &url);
+        // } else {
+        //     if is_blog_url(&url) {
+        //         proccess_and_push(record, &mut blog_to_embed, &url);
+        //     } else {
+        //         // do nothin
+        //         // the url is not blog
+        //     }
+        // }
+    }
 
     let quadrant_api = env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
     let quadrant_url = env::var("QUADRANT_URL").expect("failed to load qdt url");
@@ -281,14 +162,7 @@ pub  fn extractor_runner(py:Python<'_>,warc_path: &str) -> Result<Vec<u8>>{
 
 
 
-    // let client = Qdrant::from_url(&quadrant_url)
-    //     .api_key(quadrant_api)
-    //     .build()
-    //     .unwrap();
-    // // batch embeding should return what it has already done right ?
-    // let result = bactch_embeding(&blog_to_embed, &client).await?;
 
-    // Ok(result)
 }
 
 
@@ -334,8 +208,11 @@ fn proccess_and_push<B: BufRead>(
         let metadata = pipeline.run(file_html.as_str());
 
         let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_str());
-
-        let qdrant_object = QdrantdbObject {
+        // Optimistic validation even if the url is identified as blog there is a big chance the url is not blog 
+        // from the analysis it is rear the url is not blog if the title and the author is found so the url is pushed 
+        // if the title and the author is found 
+        if metadata.author.is_some() && metadata.title.is_some(){
+            let qdrant_object = QdrantdbObject {
             id: generate_content_id(&blog_content),
             content: blog_content,
             metadata: DbMetadata {
@@ -350,8 +227,12 @@ fn proccess_and_push<B: BufRead>(
                 publisher: metadata.publisher.map(|f| f.value).unwrap_or_default(),
             },
         };
-
         blog_to_embed.push(qdrant_object);
+
+        } 
+        
+        
+
         return Ok(ControlFlow::Continue(()));
     } else {
         return Ok(ControlFlow::Continue(()));
