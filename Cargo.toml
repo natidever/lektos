@@ -5,7 +5,7 @@ edition = "2024"
 
 [lib]
 name = "lektos"           
-# crate-type = ["cdylib"] 
+crate-type = ["cdylib"] 
 
 [dependencies]
 warc = "0.4.0"
@@ -21,6 +21,10 @@ sha2 = "0.10.9"
 
 
 gemini-rust = "0.4" 
+pyo3-async-runtimes = { version = "0.25", features = ["tokio-runtime"] }
+pyo3 = { version = "0.25.1", features = ["anyhow","extension-module"] }
+
+
 
 anyhow = "1.0"
 reqwest = "0.12.22"
@@ -41,8 +45,8 @@ url = "2.5.4"
 derive_more = { version = "2.0.1", features = ["display", "from"] }
 qdrant-client = "1.15.0"
 
-pyo3 = { version = "0.25.1", features = ["extension-module"] }
 sqlite = "0.37.0"
+arrow = "56.0.0"
 
 
 

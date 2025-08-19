@@ -1,1 +1,1 @@
-COLLECTION_NAME = "lblogs"
+COLLECTION_NAME = "blogs"

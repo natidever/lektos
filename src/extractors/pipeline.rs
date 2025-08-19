@@ -15,6 +15,9 @@ pub struct Metadata {
     pub publisher: Option<FieldResult>,
     #[pyo3(get)]
     pub description: Option<FieldResult>,
+
+    // new image field
+    pub image_url: Option<FieldResult>,
 }
 
 // titel and which extractor it came from
@@ -45,6 +48,8 @@ impl MetadataPipeline {
             Self::merge_field(&mut final_metadata.author, result.author);
             Self::merge_field(&mut final_metadata.date, result.date);
             Self::merge_field(&mut final_metadata.publisher, result.publisher);
+            Self::merge_field(&mut final_metadata.image_url, result.image_url);
+
             confidence += result.confidence;
             count += 1;
         }

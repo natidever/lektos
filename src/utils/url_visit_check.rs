@@ -32,7 +32,8 @@ impl UrlVisitTracker {
     pub fn new() -> Self {
         Self {
             bloom: BloomFilter::with_rate(0.01, 1_000_000_000),
-            store: UrlStore::new(Path::new("src/db")),
+            // todo :change hardcoded urls 
+            store: UrlStore::new(Path::new("home/natnael/projects/lektos/src/db")),
         }
     }
 

@@ -6,11 +6,14 @@ use std::time::Duration;
 // use anyhow::Context;
 use anyhow::Error;
 // use anyhow::Ok;
+// use anyhow::Ok;
 use anyhow::Result;
 // use crate::errors::{Error, Result};
 // use anyhow::Ok;
 use dotenv::dotenv;
+use pyo3::prelude::*;
 use qdrant_client::Qdrant;
+use qdrant_client::qdrant::PointsOperationResponse;
 use qdrant_client::qdrant::PointsSelector;
 use qdrant_client::qdrant::Vectors;
 use qdrant_client::qdrant::qdrant_client::QdrantClient;
@@ -35,11 +38,12 @@ use crate::{models::blog::Blog, utils::analysis::BlogResult};
 const EMBEDING_MODEL: &str = "models/embedding-001";
 
 pub struct DbMetadata {
-    pub url :String,
+    pub url: String,
     pub title: String,
     pub author: String,
     pub date: String,
     pub publisher: String,
+    pub image_url: String,
 }
 
 pub struct QdrantdbObject {
@@ -48,126 +52,13 @@ pub struct QdrantdbObject {
     pub content: String,
 }
 
-// pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
-//     dotenv().ok();
+#[pyclass]
+#[derive(Debug)]
 
-//     let api_key = env::var("GEMINI_API_KEY").expect("failed to get env");
-//     println!("{}", api_key);
-//     let embeding_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents";
-
-//     // More aggressive rate limiting settings
-//     const MAX_RETRIES: u32 = 5; // Increased from 3 to 5
-//     const INITIAL_BACKOFF: u64 = 10; // Start with 5 seconds instead of 1
-//     let mut retry_count = 0;
-//     let mut last_error = None;
-
-//     // Process blogs in smaller batches
-//     const BATCH_SIZE: usize = 1; // Reduced batch size
-//     let mut all_results = Vec::with_capacity(blogs.len());
-
-//     for chunk in blogs.chunks(BATCH_SIZE) {
-//         let mut chunk_retry_count = 0;
-//         let mut chunk_processed = false;
-
-//         while chunk_retry_count <= MAX_RETRIES && !chunk_processed {
-//             let mut headers = HeaderMap::new();
-//             headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-//             headers.insert(
-//                 "x-goog-api-key",
-//                 HeaderValue::from_str(&api_key).expect("Unable to find gemini keys"),
-//             );
-
-//             let requests: Vec<_> = chunk
-//                 .iter()
-//                 .map(|blog| {
-//                     json!({
-//                         "model": "models/text-embedding-005",
-//                         "task_type": "SEMANTIC_SIMILARITY",
-//                         "content": {
-//                             "parts": [{
-//                                 "text": blog
-//                             }]
-//                         }
-//                     })
-//                 })
-//                 .collect();
-//             let request_body = json!({ "requests": requests });
-
-//             let client = Client::new();
-//             match client
-//                 .post(embeding_url)
-//                 .headers(headers)
-//                 .json(&request_body)
-//                 .send()
-//                 .await
-//             {
-//                 Ok(response) => {
-//                     if response.status().is_success() {
-//                         let response_body = response.json::<Value>().await?;
-//                         if let Some(embeddings) = response_body["embeddings"].as_array() {
-//                             let mut results = Vec::with_capacity(embeddings.len());
-//                             for embedding in embeddings {
-//                                 if let Some(values) = embedding["values"].as_array() {
-//                                     let mut vec = Vec::with_capacity(values.len());
-//                                     for value in values {
-//                                         if let Some(val) = value.as_f64() {
-//                                             vec.push(val as f32);
-//                                         }
-//                                     }
-//                                     results.push(vec);
-//                                 }
-//                             }
-//                             all_results.extend(results);
-//                             chunk_processed = true;
-//                             // Reset retry count on success
-//                             retry_count = 0;
-//                             continue;
-//                         }
-//                     } else {
-//                         let status = response.status();
-//                         let error_body = response.text().await.unwrap_or_default();
-//                         println!("Error body from gemini {}", error_body);
-//                         last_error = Some(anyhow::anyhow!("HTTP {}: {}", status, error_body));
-
-//                         if status == StatusCode::TOO_MANY_REQUESTS
-//                             || status == StatusCode::INTERNAL_SERVER_ERROR
-//                         {
-//                             // More aggressive backoff for rate limits
-//                             let backoff = INITIAL_BACKOFF * 2u64.pow(chunk_retry_count);
-//                             println!(
-//                                 "Rate limited. Waiting {} seconds before retry (attempt {}/{})...",
-//                                 backoff,
-//                                 chunk_retry_count + 1,
-//                                 MAX_RETRIES
-//                             );
-//                             tokio::time::sleep(Duration::from_secs(backoff)).await;
-//                             chunk_retry_count += 1;
-//                         } else {
-//                             break;
-//                         }
-//                     }
-//                 }
-//                 Err(e) => {
-//                     last_error = Some(anyhow::anyhow!("Request failed: {}", e));
-//                     break;
-//                 }
-//             }
-//         }
-
-//         if !chunk_processed {
-//             return Err(last_error.unwrap_or_else(|| anyhow::anyhow!("Failed to process chunk")));
-//         }
-
-//         // Add a small delay between chunks to avoid hitting rate limits
-//         tokio::time::sleep(Duration::from_secs(2)).await;
-//     }
-
-//     if all_results.len() == blogs.len() {
-//         Ok(all_results)
-//     } else {
-//         Err(anyhow::anyhow!("Failed to process all blogs"))
-//     }
-// }
+pub struct Summary {
+    #[pyo3(get)]
+    pub status: i32,
+}
 
 pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
     dotenv().ok();
@@ -176,8 +67,8 @@ pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
 
     // Define all available API keys
     let api_keys = [
-        // env::var("GEMINI_API_KEY_1").expect("GEMINI_API_KEY_1 not set"),
-        // env::var("GEMINI_API_KEY_2").expect("GEMINI_API_KEY_2 not set"),
+        env::var("GEMINI_API_KEY_1").expect("GEMINI_API_KEY_1 not set"),
+        env::var("GEMINI_API_KEY_2").expect("GEMINI_API_KEY_2 not set"),
         env::var("GEMINI_API_KEY_3").expect("GEMINI_API_KEY_3 not set"),
         env::var("GEMINI_API_KEY_4").expect("GEMINI_API_KEY_4 not set"),
         env::var("GEMINI_API_KEY_5").expect("GEMINI_API_KEY_5 not set"),
@@ -197,101 +88,99 @@ pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
         let mut chunk_processed = false;
         let mut last_error = None;
 
-      
-            while chunk_retry_count <= MAX_RETRIES && !chunk_processed {
-                // Rotate API key if we've hit max retries with current key
-                if chunk_retry_count >= MAX_RETRIES - 1 && chunk_retry_count % MAX_RETRIES == 0 {
-                    current_key_index = (current_key_index + 1) % api_keys.len();
-                    println!("Rotating to API key {}", current_key_index + 1);
-                    chunk_retry_count = 0; // Reset retry counter for new key
-                }
+        while chunk_retry_count <= MAX_RETRIES && !chunk_processed {
+            // Rotate API key if we've hit max retries with current key
+            if chunk_retry_count >= MAX_RETRIES - 1 && chunk_retry_count % MAX_RETRIES == 0 {
+                current_key_index = (current_key_index + 1) % api_keys.len();
+                println!("Rotating to API key {}", current_key_index + 1);
+                chunk_retry_count = 0; // Reset retry counter for new key
+            }
 
-                let mut headers = HeaderMap::new();
-                headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-                headers.insert(
-                    "x-goog-api-key",
-                    HeaderValue::from_str(&api_keys[current_key_index]).expect("Invalid API key"),
-                );
+            let mut headers = HeaderMap::new();
+            headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+            headers.insert(
+                "x-goog-api-key",
+                HeaderValue::from_str(&api_keys[current_key_index]).expect("Invalid API key"),
+            );
 
-                let requests: Vec<_> = chunk
-                    .iter()
-                    .map(|blog| {
-                        json!({
-                            "model": "models/text-embedding-001",
-                            "output_dimensionality": 768,
-                            "task_type": "SEMANTIC_SIMILARITY",
-                            "content": {
-                                "parts": [{
-                                    "text": blog
-                                }]
-                            }
-                        })
+            let requests: Vec<_> = chunk
+                .iter()
+                .map(|blog| {
+                    json!({
+                        "model": "models/text-embedding-001",
+                        "output_dimensionality": 768,
+                        "task_type": "SEMANTIC_SIMILARITY",
+                        "content": {
+                            "parts": [{
+                                "text": blog
+                            }]
+                        }
                     })
-                    .collect();
-                let request_body = json!({ "requests": requests });
+                })
+                .collect();
+            let request_body = json!({ "requests": requests });
 
-                let client = Client::new();
-                match client
-                    .post(embeding_url)
-                    .headers(headers)
-                    .json(&request_body)
-                    .send()
-                    .await
-                {
-                    Ok(response) => {
-                        if response.status().is_success() {
-                            let response_body = response.json::<Value>().await?;
-                            if let Some(embeddings) = response_body["embeddings"].as_array() {
-                                let mut results = Vec::with_capacity(embeddings.len());
-                                for embedding in embeddings {
-                                    if let Some(values) = embedding["values"].as_array() {
-                                        let mut vec = Vec::with_capacity(values.len());
-                                        for value in values {
-                                            if let Some(val) = value.as_f64() {
-                                                vec.push(val as f32);
-                                            }
+            let client = Client::new();
+            match client
+                .post(embeding_url)
+                .headers(headers)
+                .json(&request_body)
+                .send()
+                .await
+            {
+                Ok(response) => {
+                    if response.status().is_success() {
+                        let response_body = response.json::<Value>().await?;
+                        if let Some(embeddings) = response_body["embeddings"].as_array() {
+                            let mut results = Vec::with_capacity(embeddings.len());
+                            for embedding in embeddings {
+                                if let Some(values) = embedding["values"].as_array() {
+                                    let mut vec = Vec::with_capacity(values.len());
+                                    for value in values {
+                                        if let Some(val) = value.as_f64() {
+                                            vec.push(val as f32);
                                         }
-                                        results.push(vec);
                                     }
+                                    results.push(vec);
                                 }
-                                all_results.extend(results);
-                                chunk_processed = true;
-                                continue;
                             }
-                        } else {
-                            let status = response.status();
-                            let error_body = response.text().await.unwrap_or_default();
-                            println!(
-                                "Error from API key {}: HTTP {}: {}",
-                                current_key_index + 1,
-                                status,
-                                error_body
-                            );
-                            last_error = Some(anyhow::anyhow!("HTTP {}: {}", status, error_body));
+                            all_results.extend(results);
+                            chunk_processed = true;
+                            continue;
+                        }
+                    } else {
+                        let status = response.status();
+                        let error_body = response.text().await.unwrap_or_default();
+                        println!(
+                            "Error from API key {}: HTTP {}: {}",
+                            current_key_index + 1,
+                            status,
+                            error_body
+                        );
+                        last_error = Some(anyhow::anyhow!("HTTP {}: {}", status, error_body));
 
-                            if status == StatusCode::TOO_MANY_REQUESTS
-                                || status == StatusCode::INTERNAL_SERVER_ERROR
-                            {
-                                let backoff =
-                                    INITIAL_BACKOFF * 2u64.pow(chunk_retry_count % MAX_RETRIES);
-                                println!(
-                                    "Rate limited on key {}. Waiting {} seconds before retry (attempt {}/{})...",
-                                    current_key_index + 1,
-                                    backoff,
-                                    (chunk_retry_count % MAX_RETRIES) + 1,
-                                    MAX_RETRIES
-                                );
-                                tokio::time::sleep(Duration::from_secs(backoff)).await;
-                            }
+                        if status == StatusCode::TOO_MANY_REQUESTS
+                            || status == StatusCode::INTERNAL_SERVER_ERROR
+                        {
+                            let backoff =
+                                INITIAL_BACKOFF * 2u64.pow(chunk_retry_count % MAX_RETRIES);
+                            println!(
+                                "Rate limited on key {}. Waiting {} seconds before retry (attempt {}/{})...",
+                                current_key_index + 1,
+                                backoff,
+                                (chunk_retry_count % MAX_RETRIES) + 1,
+                                MAX_RETRIES
+                            );
+                            tokio::time::sleep(Duration::from_secs(backoff)).await;
                         }
                     }
-                    Err(e) => {
-                        last_error = Some(anyhow::anyhow!("Request failed: {}", e));
-                    }
                 }
-                chunk_retry_count += 1;
+                Err(e) => {
+                    last_error = Some(anyhow::anyhow!("Request failed: {}", e));
+                }
             }
-        
+            chunk_retry_count += 1;
+        }
 
         if !chunk_processed {
             return Err(last_error.unwrap_or_else(|| {
@@ -306,9 +195,13 @@ pub async fn embed_blog(blogs: Vec<&str>) -> Result<Vec<Vec<f32>>> {
     Ok(all_results)
 }
 
-pub async fn bactch_embeding(all_blogs: &Vec<QdrantdbObject>, client: &Qdrant) -> Result<()> {
+pub async fn bactch_embeding(
+    all_blogs: &Vec<QdrantdbObject>,
+    client: &Qdrant,
+) -> Result<Vec<Summary>> {
     const BATCH_SIZE: usize = 1;
     let mut counter = 0;
+    let mut opration_result: Vec<Summary> = Vec::new();
 
     for blogs in all_blogs.chunks(BATCH_SIZE) {
         counter += 1;
@@ -328,12 +221,18 @@ pub async fn bactch_embeding(all_blogs: &Vec<QdrantdbObject>, client: &Qdrant) -
 
         //    Insert it to qdrnt
 
-        insert_to_qdrant(&client, points).await?;
+        let op_result = insert_to_qdrant(&client, points).await?;
+
+        let summary = Summary {
+            status: op_result.result.map(|e| e.status).unwrap_or(00.into()),
+        };
+
+        opration_result.push(summary);
 
         tokio::time::sleep(Duration::from_millis(200)).await
     }
 
-    Ok(())
+    Ok(opration_result)
     //
 }
 
@@ -342,7 +241,7 @@ fn create_point_struct(blog: &QdrantdbObject, embedding: &[f32]) -> PointStruct 
         blog.id.clone(),
         embedding.to_vec(),
         [
-            ("url",blog.metadata.url.as_str().into()),
+            ("url", blog.metadata.url.as_str().into()),
             ("title", blog.metadata.title.as_str().into()),
             ("author", blog.metadata.author.as_str().into()),
             ("date", blog.metadata.date.as_str().into()),
@@ -350,13 +249,13 @@ fn create_point_struct(blog: &QdrantdbObject, embedding: &[f32]) -> PointStruct 
         ],
     )
 }
-async fn insert_to_qdrant(client: &Qdrant, points: Vec<PointStruct>) -> anyhow::Result<()> {
-    let result = client
+async fn insert_to_qdrant(
+    client: &Qdrant,
+    points: Vec<PointStruct>,
+) -> Result<PointsOperationResponse> {
+    Ok(client
         .upsert_points(UpsertPointsBuilder::new("blogs", points).wait(true))
-        .await?;
-    println!("QD_UPSERTING_RESULT:{:?}", result);
-
-    Ok(())
+        .await?)
 }
 
 pub fn generate_content_id(blog_content: &str) -> String {
@@ -389,3 +288,6 @@ pub fn store_content_hash(connection: &Connection, url_hash: &str) -> Result<()>
     statement.next();
     Ok(())
 }
+
+// counting faield and successfully or upserted data
+// wfirst h
