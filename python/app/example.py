@@ -2,20 +2,23 @@ import ray
 import pyarrow as pa
 import io
 
+import os
+# local package
 import lektos
+# 
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-import os
 
-from app.qdrant.embedings import TEST_EMBEDING
 from qdrant_client import QdrantClient,AsyncQdrantClient
 import numpy as np
 from qdrant_client.models import PointStruct
 from qdrant_client.models import VectorParams, Distance
+from qdrant_client.http.exceptions import ApiException
+
 
 
 class StoredBlog(BaseModel):
@@ -28,8 +31,10 @@ class StoredBlog(BaseModel):
     author:str
     publisher:str
 
+COLLECTION_NAME="blogs"
 
-# ray.init()
+
+ray.init()
 
 # --- Step 1: Rust extraction via FFI (simulated here as a function returning bytes) ---
 # You'd actually bind this with pyo3/maturin, etc.
@@ -118,29 +123,47 @@ def embed(text: str):
     return result.embeddings[0].values
 
 # --- Step 3: Store ---
-# @ray.remote
-async def store_worker(blog:StoredBlog):
+
+@ray.remote
+def store_worker_wrapper(blog:StoredBlog):
+    import asyncio
+    asyncio.run(store_worker(blog))
+
+
+    
+async def store_worker(blogs:StoredBlog):
 
 
     load_dotenv()
+    
     QDRANT_API_KEY=os.getenv("QUADRANT_API_KEY")
     QDRANT_URL =  os.getenv("QUADRANT_URL")
 
-    client = AsyncQdrantClient(url=QDRANT_URL,api_key=QDRANT_API_KEY,prefer_grpc=True)
-    
-    point=create_point(blog)
-    d = await client.upsert(
-        collection_name="blogs",
-        points=[point]
+    try:
 
-    )
-    print(f"upserting result{d}")
+        client = AsyncQdrantClient(url=QDRANT_URL,api_key=QDRANT_API_KEY,prefer_grpc=True)
+
+        # point=create_point(blog)
+        points = [create_point(blog) for blog in blogs]
+        update_resposne = await client.upsert(
+            collection_name=COLLECTION_NAME,
+            points=points
+
+        )
+        return update_resposne
+    except ApiException as e :
+        print(f"Error while storing points @store_workerfn :{e}")
+        raise
+    except Exception as e :
+        print (f"Unexpected error occur @store_worker :{e}")
+        raise
+   
 
 
-    return True
 
 
 def create_point(blog:StoredBlog)->PointStruct:
+    print(f"blog_content:{blog.content}")
 
     return PointStruct(
         id="d30cedb4-ecf2-4a99-bf96-0b9df3c4c328",
@@ -164,33 +187,46 @@ def process_warcs(warc_files):
     
     # step 2 : embeding
     embeddings = ray.get([embed_worker.remote(t) for t in extracted_tables])
-    for done,fut in embeddings:
-        # print(f"fut{fut}")
-        print(f"done:{done.content}")
+    print(f"Embedings:{embeddings}")
+    # for done,fut in embeddings:
+    #     # print(f"fut{fut}")
+    #     print(f"done:{done.content}")
 
     
     
-
 
     # Step 3: distributed storing
-    results = ray.get([store_worker.remote(e) for e in embeddings])
+    results = ray.get([store_worker_wrapper.remote(e) for e in embeddings])
     return results
 
 # just a test call 
 if __name__ == "__main__":
-    import asyncio
-    blog = StoredBlog(
-        content=[23,2323,23],
-        id="test",
-        author="blog.author_test",
-        title="blog.title_test",
-        date=datetime.now(),
-        publisher="blog.publisher_Test",
-        image_url="blog.image_url_test",
-        url="blog.url_test"
+    # import asyncio
+    # blog = StoredBlog(
+    #     content=[23,2323,23,32],
+    #     id="test",
+    #     author="blog.author_test",
+    #     title="blog.title_test",
+    #     date=datetime.now(),
+    #     publisher="blog.publisher_Test",
+    #     image_url="blog.image_url_test",
+    #     url="blog.url_test"
 
-    )
-    asyncio.run(store_worker(blog))
-    # warc_files = ["warc1.warc", "warc2.warc"]
-    # results = process_warcs(warc_files)
-    # print("Pipeline finished:", results)
+    # )
+    # try:    
+    #   asyncio.run(store_worker(blog))
+    # except  ApiException as e :
+    #     print(f"this was the error :{e}")
+
+    # except Exception as e :
+    #     print(f"Unexpected  :{e}")
+        
+
+
+    warc_files = ["warc1.warc", "warc2.warc"]
+    results = process_warcs(warc_files)
+    print("Pipeline finished:", results)
+
+
+    
+    
