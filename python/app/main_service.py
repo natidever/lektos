@@ -3,7 +3,6 @@ import pyarrow as pa
 import io
 import os
 import asyncio
-import logging
 import glob
 
 
@@ -32,10 +31,9 @@ from typing import List
 from app.models import StoredBlog
 from app.utils.qdrant_utils import store_worker
 from app.utils.gemini_utils import embed
-
+from app.utils.logging_utils import logger
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
 
 
 # Initialize Ray with error handling

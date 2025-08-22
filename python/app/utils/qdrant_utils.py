@@ -7,7 +7,7 @@ from app.constants import COLLECTION_NAME
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import PointStruct
 from qdrant_client.http.exceptions import ApiException
-from app.main_service import logger
+from app.utils.logging_utils import logger
 
 
 async def store_worker(blogs: List[StoredBlog]):
