@@ -74,28 +74,30 @@ pub  fn extractor_runner(py:Python<'_>,warc_path: &str) -> Result<Vec<u8>>{
             continue;
         }
 
-        if is_blog_url(&url) {
-                proccess_and_push(record, &mut blog_to_embed, &url);
-            } else {
-                // do nothin
-                // the url is not blog
-            }
-            
-        // if vist_url_tracker.is_url_visited(&url) {
-        //     continue;
-        // }
-
-        // if feed_url_validator.is_from_feed(&url)? {
-        //     // the url is blog since it came from feeds
-        //     proccess_and_push(record, &mut blog_to_embed, &url);
-        // } else {
-        //     if is_blog_url(&url) {
+        // if is_blog_url(&url) {
         //         proccess_and_push(record, &mut blog_to_embed, &url);
         //     } else {
         //         // do nothin
         //         // the url is not blog
         //     }
-        // }
+            
+        if vist_url_tracker.is_url_visited(&url) {
+            println!("Visited URL:{}",&url);
+
+            continue;
+        }
+
+        if feed_url_validator.is_from_feed(&url)? {
+            // the url is blog since it came from feeds
+            proccess_and_push(record, &mut blog_to_embed, &url);
+        } else {
+            if is_blog_url(&url) {
+                proccess_and_push(record, &mut blog_to_embed, &url);
+            } else {
+                // do nothin
+                // the url is not blog
+            }
+        }
     }
 
     let quadrant_api = env::var("QUADRANT_API_KEY").expect("failed to load quadrant api key");
@@ -212,7 +214,7 @@ fn proccess_and_push<B: BufRead>(
         // from the analysis it is rear the url is not blog if the title and the author is found so the url is pushed 
         // if the title and the author is found 
         if metadata.author.is_some() && metadata.title.is_some(){
-            let qdrant_object = QdrantdbObject {
+            let qdrant_object: QdrantdbObject = QdrantdbObject {
             id: generate_content_id(&blog_content),
             content: blog_content,
             metadata: DbMetadata {
