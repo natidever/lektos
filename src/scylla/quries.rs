@@ -1,7 +1,8 @@
 use anyhow::{Ok, Result};
 use scylla::client::session::Session;
 use scylla::client::session_builder::SessionBuilder;
-use scylla::response::query_result::QueryResult;
+use scylla::frame::response::result;
+use scylla::response::query_result::{QueryResult, QueryRowsResult};
 use scylla::statement::prepared::PreparedStatement;
 use std::error::Error;
 
@@ -27,7 +28,6 @@ pub async fn create_scylla_keyspace(session: &Session) -> Result<QueryResult> {
 }
 
 pub async fn create_scylla_table(session: &Session) -> Result<QueryResult> {
-    // the replication is for local test
     let quries =
         "CREATE TABLE IF NOT EXISTS lektos.urls (url text PRIMARY KEY, stored_at timestamp)";
 
@@ -37,21 +37,32 @@ pub async fn create_scylla_table(session: &Session) -> Result<QueryResult> {
 }
 
 pub async fn store_url_hash(session: &Session, url: &str) -> Result<QueryResult> {
+    "Storing and retriving are prepared quries it's not neccessary to make paged since the parsing at least in url level is sequntial ";
     let prepared: PreparedStatement = session
         .prepare("INSERT INTO lektos.urls (url, stored_at) VALUES (?, toTimestamp(now()))")
         .await?;
 
     let result = session.execute_unpaged(&prepared, (url,)).await?;
-    
 
     Ok(result)
 }
 
-pub async fn get_url_hash(session: &Session, url: &str) -> Result<QueryResult> {
+pub async fn get_url_hash(session: &Session, url: &str) -> Result<Option<String>> {
+    "Storing and retriving are prepared quries it's not neccessary to make paged since the parsing at least in url level is sequntial ";
+
     let prepared: PreparedStatement = session
         .prepare("SELECT url FROM lektos.urls WHERE url=?")
         .await?;
 
-    let result = session.execute_unpaged(&prepared, (url,)).await?;
-    Ok(result)
+    let results = session
+        .execute_unpaged(&prepared, (url,))
+        .await?
+        .into_rows_result()?;
+
+    if let Some((row,)) = results.maybe_first_row::<(String,)>()? {
+        let url = row;
+        return Ok(Some(url));
+    }
+
+    Ok(None)
 }
