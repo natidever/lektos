@@ -4,7 +4,7 @@ use bloom::BloomFilter;
 use fjall::{Config, Keyspace, Partition, PartitionCreateOptions};
 use std::path::Path;
 
-// Persistent storage for visited URLs
+// dedup implementationf for distributed 
 struct UrlStore {
     partition: Partition, // "visited_urls" partition
 }
@@ -22,6 +22,15 @@ impl UrlStore {
         Self { partition }
     }
 }
+
+
+
+
+
+
+
+
+
 
 pub struct UrlVisitTracker {
     pub bloom: BloomFilter, // In-memory filter
@@ -50,7 +59,7 @@ impl UrlVisitTracker {
     /// Core deduplication logic
     pub fn is_url_visited(&self, url: &str) -> bool {
         let hash = Self::hash_url(url);
-        let hash_bytes = &hash[..]; // Slice conversion
+        let hash_bytes = &hash[..];
 
         // Step 1: Bloom filter check
         if !self.bloom.contains(&hash_bytes.to_vec()) {
@@ -79,3 +88,5 @@ impl UrlVisitTracker {
             .expect("Fjall write failed");
     }
 }
+
+

@@ -4,13 +4,15 @@ use std::{
     env,
     fs::{self, File},
     io::{BufRead, BufReader, BufWriter},
-    sync::Arc, u8,
+    sync::Arc,
+    u8,
 };
 
-use anyhow::{ Result};
+use anyhow::Result;
 use arrow::{
     array::{ArrayRef, RecordBatch, StringArray},
-    datatypes::{DataType, Field, Schema}, ipc::writer::StreamWriter,
+    datatypes::{DataType, Field, Schema},
+    ipc::writer::StreamWriter,
 };
 use dotenv::dotenv;
 use pyo3::{ffi::PyByteArrayObject, prelude::*, types::PyBytes};
@@ -33,15 +35,9 @@ use crate::{
     },
 };
 
-
 use std::net::TcpListener;
 
-
-pub  fn extractor_runner(py:Python<'_>,warc_path: &str) -> Result<Vec<u8>>{
-
-        
-        
-     
+pub fn extractor_runner(py: Python<'_>, warc_path: &str) -> Result<Vec<u8>> {
     dotenv().ok();
 
     let mut blog_to_embed: Vec<QdrantdbObject> = Vec::new();
@@ -80,9 +76,9 @@ pub  fn extractor_runner(py:Python<'_>,warc_path: &str) -> Result<Vec<u8>>{
         //         // do nothin
         //         // the url is not blog
         //     }
-            
+
         if vist_url_tracker.is_url_visited(&url) {
-            println!("Visited URL:{}",&url);
+            println!("Visited URL:{}", &url);
 
             continue;
         }
@@ -146,51 +142,19 @@ pub  fn extractor_runner(py:Python<'_>,warc_path: &str) -> Result<Vec<u8>>{
 
     let arrays: Vec<ArrayRef> = vec![id, content, url, image_url, title, author, date, publisher];
 
-    let record_batch =
-        RecordBatch::try_new(schema.clone(), arrays).unwrap();
+    let record_batch = RecordBatch::try_new(schema.clone(), arrays).unwrap();
     // println!("Real batched:{:?}", record_batch);
 
-    // trying to send for python 
+    // trying to send for python
     let mut buffer = Vec::new();
     let mut object_reciver = StreamWriter::try_new(&mut buffer, &schema).unwrap();
     {
-    object_reciver.write(&record_batch);
-    object_reciver.finish();
-
+        object_reciver.write(&record_batch);
+        object_reciver.finish();
     }
 
-
     Ok(buffer)
-
-
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 fn proccess_and_push<B: BufRead>(
     record: Record<StreamingBody<'_, B>>,
@@ -210,30 +174,27 @@ fn proccess_and_push<B: BufRead>(
         let metadata = pipeline.run(file_html.as_str());
 
         let blog_content = BlogProcessor::extract_and_sanitize(file_html.as_str());
-        // Optimistic validation even if the url is identified as blog there is a big chance the url is not blog 
-        // from the analysis it is rear the url is not blog if the title and the author is found so the url is pushed 
-        // if the title and the author is found 
-        if metadata.author.is_some() && metadata.title.is_some(){
+        // Optimistic validation even if the url is identified as blog there is a big chance the url is not blog
+        // from the analysis it is rear the url is not blog if the title and the author is found so the url is pushed
+        // if the title and the author is found
+        if metadata.author.is_some() && metadata.title.is_some() {
             let qdrant_object: QdrantdbObject = QdrantdbObject {
-            id: generate_content_id(&blog_content),
-            content: blog_content,
-            metadata: DbMetadata {
-                url: url.to_lowercase(),
-                image_url: metadata
-                    .image_url
-                    .map(|f| f.value)
-                    .unwrap_or("Undefined".into()),
-                title: metadata.title.map(|f| f.value).unwrap_or("Untitled".into()),
-                author: metadata.author.map(|f| f.value).unwrap_or("Unknown".into()),
-                date: metadata.date.map(|f| f.value).unwrap_or("".into()),
-                publisher: metadata.publisher.map(|f| f.value).unwrap_or_default(),
-            },
-        };
-        blog_to_embed.push(qdrant_object);
-
-        } 
-        
-        
+                id: generate_content_id(&blog_content),
+                content: blog_content,
+                metadata: DbMetadata {
+                    url: url.to_lowercase(),
+                    image_url: metadata
+                        .image_url
+                        .map(|f| f.value)
+                        .unwrap_or("Undefined".into()),
+                    title: metadata.title.map(|f| f.value).unwrap_or("Untitled".into()),
+                    author: metadata.author.map(|f| f.value).unwrap_or("Unknown".into()),
+                    date: metadata.date.map(|f| f.value).unwrap_or("".into()),
+                    publisher: metadata.publisher.map(|f| f.value).unwrap_or_default(),
+                },
+            };
+            blog_to_embed.push(qdrant_object);
+        }
 
         return Ok(ControlFlow::Continue(()));
     } else {
