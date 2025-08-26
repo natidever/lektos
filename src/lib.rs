@@ -3,6 +3,7 @@ pub mod errors;
 pub mod extractors;
 pub mod models;
 pub mod utils;
+pub mod scylla;
 
 // use anyhow::Ok;
 // use anyhow::Ok;

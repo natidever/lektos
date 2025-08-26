@@ -77,11 +77,11 @@ pub fn extractor_runner(py: Python<'_>, warc_path: &str) -> Result<Vec<u8>> {
         //         // the url is not blog
         //     }
 
-        if vist_url_tracker.is_url_visited(&url) {
-            println!("Visited URL:{}", &url);
+        // if vist_url_tracker.is_url_visited(&url) {
+        //     println!("Visited URL:{}", &url);
 
-            continue;
-        }
+        //     continue;
+        // }
 
         if feed_url_validator.is_from_feed(&url)? {
             // the url is blog since it came from feeds

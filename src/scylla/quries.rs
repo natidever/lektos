@@ -6,6 +6,8 @@ use scylla::response::query_result::{QueryResult, QueryRowsResult};
 use scylla::statement::prepared::PreparedStatement;
 use std::error::Error;
 
+// Implement the dedup system and write he test 
+
 pub async fn create_or_get_syclla_session() -> Result<Session> {
     let session: Session = SessionBuilder::new()
         .known_node("127.0.0.1:9042")
@@ -27,6 +29,8 @@ pub async fn create_scylla_keyspace(session: &Session) -> Result<QueryResult> {
     Ok(result)
 }
 
+
+
 pub async fn create_scylla_table(session: &Session) -> Result<QueryResult> {
     let quries =
         "CREATE TABLE IF NOT EXISTS lektos.urls (url text PRIMARY KEY, stored_at timestamp)";
@@ -36,7 +40,13 @@ pub async fn create_scylla_table(session: &Session) -> Result<QueryResult> {
     Ok(result)
 }
 
-pub async fn store_url_hash(session: &Session, url: &str) -> Result<QueryResult> {
+
+#[derive(Default,Debug)]
+pub struct UrlStoreProcedures;
+
+impl  UrlStoreProcedures {
+
+    pub async fn store_url_hash(&self,session: &Session, url: &str) -> Result<QueryResult> {
     "Storing and retriving are prepared quries it's not neccessary to make paged since the parsing at least in url level is sequntial ";
     let prepared: PreparedStatement = session
         .prepare("INSERT INTO lektos.urls (url, stored_at) VALUES (?, toTimestamp(now()))")
@@ -46,9 +56,8 @@ pub async fn store_url_hash(session: &Session, url: &str) -> Result<QueryResult>
 
     Ok(result)
 }
-
-pub async fn get_url_hash(session: &Session, url: &str) -> Result<Option<String>> {
-    "Storing and retriving are prepared quries it's not neccessary to make paged since the parsing at least in url level is sequntial ";
+pub async fn get_url_hash(&self,session: &Session, url: &str) -> Result<Option<String>> {
+    "Storing and retriving are prepared quries(not paged) it's not neccessary to make paged since the parsing, at least in url level is sequntial ";
 
     let prepared: PreparedStatement = session
         .prepare("SELECT url FROM lektos.urls WHERE url=?")
@@ -66,3 +75,9 @@ pub async fn get_url_hash(session: &Session, url: &str) -> Result<Option<String>
 
     Ok(None)
 }
+
+    
+}
+
+
+
