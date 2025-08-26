@@ -4,7 +4,7 @@ use bloom::BloomFilter;
 use fjall::{Config, Keyspace, Partition, PartitionCreateOptions};
 use std::path::Path;
 
-// dedup implementationf for distributed 
+// dedup implementationf for distributed
 struct UrlStore {
     partition: Partition, // "visited_urls" partition
 }
@@ -23,15 +23,6 @@ impl UrlStore {
     }
 }
 
-
-
-
-
-
-
-
-
-
 pub struct UrlVisitTracker {
     pub bloom: BloomFilter, // In-memory filter
     pub store: UrlStore,    // Disk-backed store
@@ -41,7 +32,7 @@ impl UrlVisitTracker {
     pub fn new() -> Self {
         Self {
             bloom: BloomFilter::with_rate(0.01, 1_000_000_000),
-            // todo :change hardcoded urls 
+            // todo :change hardcoded urls
             store: UrlStore::new(Path::new("home/natnael/projects/lektos/src/db")),
         }
     }
@@ -88,5 +79,3 @@ impl UrlVisitTracker {
             .expect("Fjall write failed");
     }
 }
-
-

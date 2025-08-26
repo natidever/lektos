@@ -5,7 +5,8 @@ use crate::models::blog::Blog;
 use crate::models::metadata::ExtractionResult;
 use crate::models::metadata::FieldResult;
 use crate::scylla::quries::create_scylla_table;
-use crate::scylla::quries::{create_or_get_syclla_session,create_scylla_keyspace};
+use crate::scylla::quries::store_url_hash;
+use crate::scylla::quries::{create_or_get_syclla_session, create_scylla_keyspace};
 use crate::utils::analysis::BlogLog;
 use crate::utils::analysis::log_blog_to_csv;
 use crate::utils::find_blog_url::is_blog_url;
@@ -29,7 +30,6 @@ use std::{env, fs};
 
 use anyhow::Result;
 
-
 #[tokio::main]
 pub async fn main() -> Result<()> {
     let vist_url_tracker = UrlVisitTracker::new();
@@ -43,12 +43,12 @@ pub async fn main() -> Result<()> {
     // println!("fff{:?}", result);
     // NB: db is automatically closed at end of lifetime
 
-    let scyla_session=create_or_get_syclla_session().await?;
-    
-    let key_spcae= create_scylla_keyspace(&scyla_session).await?;
-    let table = create_scylla_table(&scyla_session).await?;
-    println!("table :{:?}",table);
+    let scyla_session = create_or_get_syclla_session().await?;
 
+    let key_spcae = create_scylla_keyspace(&scyla_session).await?;
+    let table = create_scylla_table(&scyla_session).await?;
+    let store_url_hahs = store_url_hash(&scyla_session, "URL_HAHS_TEST").await?;
+    println!("storedhash :{:?}", store_url_hahs);
 
     Ok(())
 }
