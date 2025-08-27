@@ -296,3 +296,56 @@ assert_eq!(hash.len(), 16, "Unicode URL should hash to 16 bytes: {}", url);
 
 }
 
+
+
+  
+
+#[test]
+
+fn test_very_long_url_handling() {
+
+// creat a very long URL
+
+let base = "https://example.com/";
+
+let long_path = "a".repeat(10000);
+
+let long_url = format!("{}{}", base, long_path);
+
+let hash = UrlVisitTracker::hash_url(&long_url);
+
+assert_eq!(hash.len(), 16, "Very long URL should still hash to 16 bytes");
+
+}
+
+
+#[test]
+
+fn test_empty_and_minimal_urls() {
+
+let minimal_urls = vec![
+
+"",
+
+"a",
+
+"ab",
+
+"http://a",
+
+"https://a.b",
+
+];
+
+for url in minimal_urls {
+
+let hash = UrlVisitTracker::hash_url(url);
+
+assert_eq!(hash.len(), 16, "Minimal URL should hash to 16 bytes: '{}'", url);
+
+}
+
+}
+
+
+
