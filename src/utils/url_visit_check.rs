@@ -29,8 +29,6 @@ impl UrlStore {
 
 
 
-
-
 pub struct UrlVisitTracker {
     pub bloom: BloomFilter, // In-memory filter
     pub store: UrlStore,    // Disk-backed store(scyla)
