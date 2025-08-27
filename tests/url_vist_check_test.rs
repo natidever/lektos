@@ -191,7 +191,7 @@ bloom.insert(&hash.to_vec());
 
 }
 
-// Check URLs should not be in bloom filter (though false positives are possible)
+// checkin URLs should not be in bloom filter (though false positives are possible)
 
 let mut false_positives = 0;
 
@@ -207,7 +207,7 @@ false_positives += 1;
 
 }
 
-// With a 0.01 false positive rate and only 2 items, false positives should be rare
+// With a 0.01 false positive rate and only 2 items false positives should be rare
 
 assert!(false_positives <= check_urls.len(), "Too many false positives");
 
@@ -222,7 +222,7 @@ assert!(false_positives <= check_urls.len(), "Too many false positives");
 
 async fn test_url_visit_tracker_creation() {
 
-// This test might fail if Scylla is not available, so we'll make it conditional
+// This test might fail if Scylla is not available  so we'll make it conditional
 
 match UrlVisitTracker::new().await {
 
@@ -238,7 +238,7 @@ Err(e) => {
 
 // If Scylla is not available, that's expected in test environment
 
-println!("Scylla not available for testing: {} - this is expected in CI/test environments", e);
+println!("Scylla not available for testing: {} - expected in CI/test envi", e);
 
 }
 
