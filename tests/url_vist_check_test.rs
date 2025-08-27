@@ -103,4 +103,72 @@ assert_eq!(hash.len(), 16, "Hash length should be 16 bytes for URL: {}", url);
 
 }
 
+
 }
+
+
+#[test]
+fn test_blake3_hash_verification() {
+
+let url = "https://example.com";
+
+let tracker_hash = UrlVisitTracker::hash_url(url);
+
+// Manually compute Blake3 hash to verify our implementation
+
+let mut hasher = Hasher::new();
+
+hasher.update(url.as_bytes());
+
+let full_hash = hasher.finalize();
+
+let mut expected_hash = [0u8; 16];
+
+expected_hash.copy_from_slice(&full_hash.as_bytes()[..16]);
+
+assert_eq!(tracker_hash, expected_hash);
+
+}
+
+
+#[test]
+
+fn test_bloom_filter_basic_functionality() {
+
+let mut bloom = BloomFilter::with_rate(0.01, 1_000_000);
+
+let test_urls = create_test_urls();
+
+// first no URLs should be in the bloom filter
+
+for url in &test_urls {
+
+let hash = UrlVisitTracker::hash_url(url);
+
+assert!(!bloom.contains(&hash.to_vec()));
+
+}
+
+//adding url to blom
+
+for url in &test_urls {
+
+let hash = UrlVisitTracker::hash_url(url);
+
+bloom.insert(&hash.to_vec());
+
+}
+
+// 
+
+for url in &test_urls {
+
+let hash = UrlVisitTracker::hash_url(url);
+
+assert!(bloom.contains(&hash.to_vec()));
+
+}
+
+}
+
+  
