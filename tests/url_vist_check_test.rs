@@ -349,3 +349,61 @@ assert_eq!(hash.len(), 16, "Minimal URL should hash to 16 bytes: '{}'", url);
 
 
 
+#[cfg(test)]
+
+mod integration_tests {
+
+use super::*;
+
+use lektos::scylla::quries::{create_or_get_syclla_session, create_scylla_keyspace, create_scylla_table, UrlStoreProcedures};
+
+  
+
+#[tokio::test]
+
+#[ignore] // Ignored in ci since it needs a real scylla db connection
+
+async fn test_real_scylla_connection() {
+
+// This test requires a running Scylla instance
+
+let session = create_or_get_syclla_session().await;
+
+assert!(session.is_ok(), "Should be able to connect to Scylla");
+
+if let Ok(session) = session {
+
+// Create keyspace and table
+
+let _ = create_scylla_keyspace(&session).await;
+
+let _ = create_scylla_table(&session).await;
+
+// Test URL store procedures
+
+let procedures = UrlStoreProcedures::default();
+
+let test_url = "https://integration-test.com";
+
+// Initially should not exist
+
+let result = procedures.get_url_hash(&session, test_url).await.unwrap();
+
+assert!(result.is_none());
+
+// Store URL
+
+let _ = procedures.store_url_hash(&session, test_url).await.unwrap();
+
+// Should now exist
+
+let result = procedures.get_url_hash(&session, test_url).await.unwrap();
+
+assert!(result.is_some());
+
+assert_eq!(result.unwrap(), test_url);
+
+}
+
+}
+}
