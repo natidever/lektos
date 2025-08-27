@@ -28,12 +28,12 @@ mod tests {
     #[test]
     fn test_url_hashing_consistency() {
         let url = "https://example.com";
-        
+
         // just hasing same url multiple time to test consistency
         let hash1 = UrlVisitTracker::hash_url(url);
         let hash2 = UrlVisitTracker::hash_url(url);
         let hash3 = UrlVisitTracker::hash_url(url);
-        
+
         // here all must be identical
         assert_eq!(hash1, hash2);
         assert_eq!(hash2, hash3);
@@ -41,369 +41,327 @@ mod tests {
     }
 }
 
-
 #[test]
 
 fn test_url_hashing_different_urls() {
+    let urls = create_test_urls();
 
-let urls = create_test_urls();
+    let mut hashes = HashSet::new();
 
-let mut hashes = HashSet::new();
+    // hashing different url
 
-// hashing different url
+    for url in urls {
+        let hash = UrlVisitTracker::hash_url(url);
 
-for url in urls {
+        assert_eq!(hash.len(), 16);
 
-let hash = UrlVisitTracker::hash_url(url);
+        let hash_vec = hash.to_vec();
 
-assert_eq!(hash.len(), 16);
-
-
-
-let hash_vec = hash.to_vec();
-
-assert!(hashes.insert(hash_vec), "Hash collision detected for URL: {}", url);
-
+        assert!(
+            hashes.insert(hash_vec),
+            "Hash collision detected for URL: {}",
+            url
+        );
+    }
 }
-
-}
-
-
-
 
 #[test]
 
 fn test_url_hashing_edge_cases() {
+    let edge_cases = vec![
+        "", // Empty string
+        "a", // Single character
+        "https://", // Protocol only
+        "https://example.com/very/long/path/with/many/segments/and/query?param1=value1&param2=value2&param3=value3", // Very long URL
+        "https://example.com/path with spaces", // URL with spaces
+        "https://example.com/path?query=value#fragment", // URL with query and fragment
+        "https://user:pass@example.com:8080/path", // Url with credentials and port
+    ];
 
-let edge_cases = vec![
+    for url in edge_cases {
+        let hash = UrlVisitTracker::hash_url(url);
 
-"", // Empty string
-
-"a", // Single character
-
-"https://", // Protocol only
-
-"https://example.com/very/long/path/with/many/segments/and/query?param1=value1&param2=value2&param3=value3", // Very long URL
-
-"https://example.com/path with spaces", // URL with spaces
-
-"https://example.com/path?query=value#fragment", // URL with query and fragment
-
-"https://user:pass@example.com:8080/path", // Url with credentials and port
-
-];
-
-  
-
-for url in edge_cases {
-
-let hash = UrlVisitTracker::hash_url(url);
-
-assert_eq!(hash.len(), 16, "Hash length should be 16 bytes for URL: {}", url);
-
+        assert_eq!(
+            hash.len(),
+            16,
+            "Hash length should be 16 bytes for URL: {}",
+            url
+        );
+    }
 }
-
-
-}
-
 
 #[test]
 fn test_blake3_hash_verification() {
+    let url = "https://example.com";
 
-let url = "https://example.com";
+    let tracker_hash = UrlVisitTracker::hash_url(url);
 
-let tracker_hash = UrlVisitTracker::hash_url(url);
+    // Manually compute Blake3 hash to verify our implementation
 
-// Manually compute Blake3 hash to verify our implementation
+    let mut hasher = Hasher::new();
 
-let mut hasher = Hasher::new();
+    hasher.update(url.as_bytes());
 
-hasher.update(url.as_bytes());
+    let full_hash = hasher.finalize();
 
-let full_hash = hasher.finalize();
+    let mut expected_hash = [0u8; 16];
 
-let mut expected_hash = [0u8; 16];
+    expected_hash.copy_from_slice(&full_hash.as_bytes()[..16]);
 
-expected_hash.copy_from_slice(&full_hash.as_bytes()[..16]);
-
-assert_eq!(tracker_hash, expected_hash);
-
+    assert_eq!(tracker_hash, expected_hash);
 }
-
 
 #[test]
 
 fn test_bloom_filter_basic_functionality() {
+    let mut bloom = BloomFilter::with_rate(0.01, 1_000_000);
 
-let mut bloom = BloomFilter::with_rate(0.01, 1_000_000);
+    let test_urls = create_test_urls();
 
-let test_urls = create_test_urls();
+    // first no URLs should be in the bloom filter
 
-// first no URLs should be in the bloom filter
+    for url in &test_urls {
+        let hash = UrlVisitTracker::hash_url(url);
 
-for url in &test_urls {
+        assert!(!bloom.contains(&hash.to_vec()));
+    }
 
-let hash = UrlVisitTracker::hash_url(url);
+    //adding url to blom
 
-assert!(!bloom.contains(&hash.to_vec()));
+    for url in &test_urls {
+        let hash = UrlVisitTracker::hash_url(url);
 
+        bloom.insert(&hash.to_vec());
+    }
+
+    //
+
+    for url in &test_urls {
+        let hash = UrlVisitTracker::hash_url(url);
+
+        assert!(bloom.contains(&hash.to_vec()));
+    }
 }
 
-//adding url to blom
-
-for url in &test_urls {
-
-let hash = UrlVisitTracker::hash_url(url);
-
-bloom.insert(&hash.to_vec());
-
-}
-
-// 
-
-for url in &test_urls {
-
-let hash = UrlVisitTracker::hash_url(url);
-
-assert!(bloom.contains(&hash.to_vec()));
-
-}
-
-}
-
-  #[test]
+#[test]
 
 fn test_bloom_filter_false_positives() {
+    let mut bloom = BloomFilter::with_rate(0.01, 1_000_000);
 
-let mut bloom = BloomFilter::with_rate(0.01, 1_000_000);
+    let test_urls = vec!["https://example1.com", "https://example2.com"];
 
-let test_urls = vec!["https://example1.com", "https://example2.com"];
+    let check_urls = vec!["https://example3.com", "https://example4.com"];
 
-let check_urls = vec!["https://example3.com", "https://example4.com"];
+    // Add test URLs to bloom filter
 
-// Add test URLs to bloom filter
+    for url in &test_urls {
+        let hash = UrlVisitTracker::hash_url(url);
 
-for url in &test_urls {
+        bloom.insert(&hash.to_vec());
+    }
 
-let hash = UrlVisitTracker::hash_url(url);
+    // checkin URLs should not be in bloom filter (though false positives are possible)
 
-bloom.insert(&hash.to_vec());
+    let mut false_positives = 0;
 
+    for url in &check_urls {
+        let hash = UrlVisitTracker::hash_url(url);
+
+        if bloom.contains(&hash.to_vec()) {
+            false_positives += 1;
+        }
+    }
+
+    // With a 0.01 false positive rate and only 2 items false positives should be rare
+
+    assert!(
+        false_positives <= check_urls.len(),
+        "Too many false positives"
+    );
 }
-
-// checkin URLs should not be in bloom filter (though false positives are possible)
-
-let mut false_positives = 0;
-
-for url in &check_urls {
-
-let hash = UrlVisitTracker::hash_url(url);
-
-if bloom.contains(&hash.to_vec()) {
-
-false_positives += 1;
-
-}
-
-}
-
-// With a 0.01 false positive rate and only 2 items false positives should be rare
-
-assert!(false_positives <= check_urls.len(), "Too many false positives");
-
-}
-
-
-
-
- 
 
 #[tokio::test]
 
 async fn test_url_visit_tracker_creation() {
+    // This test might fail if Scylla is not available  so we'll make it conditional
 
-// This test might fail if Scylla is not available  so we'll make it conditional
+    match UrlVisitTracker::new().await {
+        Ok(_tracker) => {
+            // If we can create a tracker, that's good
 
-match UrlVisitTracker::new().await {
+            println!("Successfully created UrlVisitTracker");
+        }
 
-Ok(_tracker) => {
-
-// If we can create a tracker, that's good
-
-println!("Successfully created UrlVisitTracker");
-
+        Err(e) => {
+            println!(
+                "Scylla not available for testing: {} - expected in CI/test envi",
+                e
+            );
+        }
+    }
 }
-
-Err(e) => {
-
-
-
-println!("Scylla not available for testing: {} - expected in CI/test envi", e);
-
-}
-
-}
-
-}
-
 
 #[test]
 
 fn test_bloom_filter_error_rates() {
+    // Test different error rates
 
-// Test different error rates
+    let strict_bloom = BloomFilter::with_rate(0.001, 10000); // 0.1% error rate
 
-let strict_bloom = BloomFilter::with_rate(0.001, 10000); // 0.1% error rate
+    let loose_bloom = BloomFilter::with_rate(0.1, 10000); // 10% error rate
 
-let loose_bloom = BloomFilter::with_rate(0.1, 10000); // 10% error rate
+    let test_url = "https://example.com";
 
-let test_url = "https://example.com";
+    let hash = UrlVisitTracker::hash_url(test_url);
 
-let hash = UrlVisitTracker::hash_url(test_url);
+    // Both should initially not contain the hash
 
-// Both should initially not contain the hash
+    assert!(!strict_bloom.contains(&hash.to_vec()));
 
-assert!(!strict_bloom.contains(&hash.to_vec()));
-
-assert!(!loose_bloom.contains(&hash.to_vec()));
-
+    assert!(!loose_bloom.contains(&hash.to_vec()));
 }
-
 
 #[test]
 
 fn test_unicode_url_handling() {
+    let unicode_urls = vec![
+        "https://例え.テスト",
+        "https://пример.испытание",
+        "https://مثال.اختبار",
+        "https://example.com/path/with/émojis/🦀",
+    ];
 
-let unicode_urls = vec![
+    for url in unicode_urls {
+        let hash = UrlVisitTracker::hash_url(url);
 
-"https://例え.テスト",
-
-"https://пример.испытание",
-
-"https://مثال.اختبار",
-
-"https://example.com/path/with/émojis/🦀",
-
-];
-
-for url in unicode_urls {
-
-let hash = UrlVisitTracker::hash_url(url);
-
-assert_eq!(hash.len(), 16, "Unicode URL should hash to 16 bytes: {}", url);
-
+        assert_eq!(
+            hash.len(),
+            16,
+            "Unicode URL should hash to 16 bytes: {}",
+            url
+        );
+    }
 }
-
-}
-
-
-
-  
 
 #[test]
 
 fn test_very_long_url_handling() {
+    // creat a very long URL
 
-// creat a very long URL
+    let base = "https://example.com/";
 
-let base = "https://example.com/";
+    let long_path = "a".repeat(10000);
 
-let long_path = "a".repeat(10000);
+    let long_url = format!("{}{}", base, long_path);
 
-let long_url = format!("{}{}", base, long_path);
+    let hash = UrlVisitTracker::hash_url(&long_url);
 
-let hash = UrlVisitTracker::hash_url(&long_url);
-
-assert_eq!(hash.len(), 16, "Very long URL should still hash to 16 bytes");
-
+    assert_eq!(
+        hash.len(),
+        16,
+        "Very long URL should still hash to 16 bytes"
+    );
 }
-
 
 #[test]
 
 fn test_empty_and_minimal_urls() {
+    let minimal_urls = vec!["", "a", "ab", "http://a", "https://a.b"];
 
-let minimal_urls = vec![
+    for url in minimal_urls {
+        let hash = UrlVisitTracker::hash_url(url);
 
-"",
-
-"a",
-
-"ab",
-
-"http://a",
-
-"https://a.b",
-
-];
-
-for url in minimal_urls {
-
-let hash = UrlVisitTracker::hash_url(url);
-
-assert_eq!(hash.len(), 16, "Minimal URL should hash to 16 bytes: '{}'", url);
-
+        assert_eq!(
+            hash.len(),
+            16,
+            "Minimal URL should hash to 16 bytes: '{}'",
+            url
+        );
+    }
 }
-
-}
-
-
 
 #[cfg(test)]
 
 mod integration_tests {
 
-use super::*;
+    use super::*;
 
-use lektos::scylla::quries::{create_or_get_syclla_session, create_scylla_keyspace, create_scylla_table, UrlStoreProcedures};
+    use lektos::scylla::quries::{
+        UrlStoreProcedures, create_or_get_syclla_session, create_scylla_keyspace,
+        create_scylla_table,
+    };
 
-  
+    #[tokio::test]
+    #[ignore] // Ignored in ci since it needs a real scylla db connection
 
-#[tokio::test]
+    async fn test_real_scylla_connection() {
+        // This test requires a running Scylla instance
 
-#[ignore] // Ignored in ci since it needs a real scylla db connection
+        let session = create_or_get_syclla_session().await;
 
-async fn test_real_scylla_connection() {
+        assert!(session.is_ok(), "Should be able to connect to Scylla");
 
-// This test requires a running Scylla instance
+        if let Ok(session) = session {
+            // Create keyspace and table
 
-let session = create_or_get_syclla_session().await;
+            let _ = create_scylla_keyspace(&session).await;
 
-assert!(session.is_ok(), "Should be able to connect to Scylla");
+            let _ = create_scylla_table(&session).await;
 
-if let Ok(session) = session {
+            // Test URL store procedures
 
-// Create keyspace and table
+            let procedures = UrlStoreProcedures::default();
 
-let _ = create_scylla_keyspace(&session).await;
+            let test_url = "https://integration-test.com";
 
-let _ = create_scylla_table(&session).await;
+            // Initially should not exist
 
-// Test URL store procedures
+            let result = procedures.get_url_hash(&session, test_url).await.unwrap();
 
-let procedures = UrlStoreProcedures::default();
+            assert!(result.is_none());
 
-let test_url = "https://integration-test.com";
+            // Store URL
 
-// Initially should not exist
+            let _ = procedures.store_url_hash(&session, test_url).await.unwrap();
 
-let result = procedures.get_url_hash(&session, test_url).await.unwrap();
+            // Should now exist
 
-assert!(result.is_none());
+            let result = procedures.get_url_hash(&session, test_url).await.unwrap();
 
-// Store URL
+            assert!(result.is_some());
 
-let _ = procedures.store_url_hash(&session, test_url).await.unwrap();
+            assert_eq!(result.unwrap(), test_url);
+        }
+    }
 
-// Should now exist
+    #[tokio::test]
+    // #[ignore] // Ignore  since it requires Scylla(it pass it'll pass in ci pipeline)
 
-let result = procedures.get_url_hash(&session, test_url).await.unwrap();
+    async fn test_full_url_visit_tracker() {
+        // This test requires a running Scylla instance
 
-assert!(result.is_some());
+        match UrlVisitTracker::new().await {
+            Ok(mut tracker) => {
+                let test_url = "https://full-integration-test.com";
 
-assert_eq!(result.unwrap(), test_url);
+                // Initially should not be visited
 
-}
+                assert!(!tracker.is_url_visited(test_url).await);
 
-}
+                // Mark as visited
+
+                tracker.mark_visited(test_url).await;
+
+                // Should now be visited
+
+                assert!(tracker.is_url_visited(test_url).await);
+            }
+
+            Err(e) => {
+                println!("Scylla not available for integration test: {}", e);
+
+                // This is expected in CI environments without Scylla
+            }
+        }
+    }
 }

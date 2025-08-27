@@ -1,33 +1,30 @@
+use anyhow::Result;
 use blake3::Hasher;
 use bloom::BloomFilter;
-use anyhow::{ Result};
 
-use fjall::{Config, Keyspace, Partition, PartitionCreateOptions};
-use std::path::Path;
+use crate::scylla::quries::{
+    UrlStoreProcedures, create_or_get_syclla_session, create_scylla_keyspace,
+};
 use scylla::client::session::Session;
-use crate::scylla::quries::{create_or_get_syclla_session, create_scylla_keyspace, UrlStoreProcedures};
+use std::path::Path;
 
 // dedup implementationf for distributed
 #[derive(Debug)]
 struct UrlStore {
-    scylla_session:Session,
+    scylla_session: Session,
     url_store_procedures: UrlStoreProcedures, // "visited_urls" partition ket his be sessin
 }
 
 impl UrlStore {
     pub async fn new() -> Result<Self> {
-        
         let scylla_session = create_or_get_syclla_session().await?;
-        let url_store_procedures=UrlStoreProcedures::default();
-        Ok(Self { scylla_session ,url_store_procedures})
+        let url_store_procedures = UrlStoreProcedures::default();
+        Ok(Self {
+            scylla_session,
+            url_store_procedures,
+        })
     }
-
-
-
 }
-
-
-
 
 pub struct UrlVisitTracker {
     pub bloom: BloomFilter, // In-memory filter
@@ -35,15 +32,12 @@ pub struct UrlVisitTracker {
 }
 
 impl UrlVisitTracker {
-    pub async  fn new() -> Result<Self> {
-        Ok(
-            Self {
+    pub async fn new() -> Result<Self> {
+        Ok(Self {
             bloom: BloomFilter::with_rate(0.01, 1_000_000_000),
             // todo :change hardcoded urls
             store: UrlStore::new().await?,
-        }
-        )
-        
+        })
     }
 
     /// Hash URL to 16-byte array
@@ -66,25 +60,31 @@ impl UrlVisitTracker {
             return false;
         }
 
-        // Step 2:  disk check -Scylla 
-       
+        // Step 2:  disk check -Scylla
 
-        match self.store.url_store_procedures.get_url_hash(&self.store.scylla_session, url).await{
-            Ok(Some(_))=>true,
-            Ok(None)=>false,
-            Err(_)=>false
+        match self
+            .store
+            .url_store_procedures
+            .get_url_hash(&self.store.scylla_session, url)
+            .await
+        {
+            Ok(Some(_)) => true,
+            Ok(None) => false,
+            Err(_) => false,
         }
     }
 
     /// Mark URL as visited
-    pub async  fn mark_visited(&mut self, url: &str) {
+    pub async fn mark_visited(&mut self, url: &str) {
         let hash = Self::hash_url(url);
         let hash_bytes = &hash[..];
 
         // Add to Bloom filter
         self.bloom.insert(&hash_bytes.to_vec());
 
-        self.store.url_store_procedures.store_url_hash(&self.store.scylla_session, url).await;
-        
+        self.store
+            .url_store_procedures
+            .store_url_hash(&self.store.scylla_session, url)
+            .await;
     }
 }

@@ -25,24 +25,24 @@ use crate::{
     extractors::pipeline::MetadataPipeline,
     models::blog::Blog,
     utils::{
-        analysis::{BlogLog, log_blog_to_csv},
-        embed::{DbMetadata, QdrantdbObject, Summary, bactch_embeding, generate_content_id},
+        analysis::{log_blog_to_csv, BlogLog},
+        embed::{bactch_embeding, generate_content_id, DbMetadata, QdrantdbObject, Summary},
         find_blog_url::is_blog_url,
         find_feeds::{extract_url, is_feed},
         html_utils::BlogProcessor,
-        url_visit_check::UrlVisitTracker,
+        url_visit_check::{self, UrlVisitTracker},
         valid_url_from_feeds::FeedUrlValidator,
     },
 };
 
 use std::net::TcpListener;
 
-pub fn extractor_runner(py: Python<'_>, warc_path: &str) -> Result<Vec<u8>> {
+pub async fn extractor_runner(py: Python<'_>, warc_path: &str) -> Result<Vec<u8>> {
     dotenv().ok();
 
     let mut blog_to_embed: Vec<QdrantdbObject> = Vec::new();
 
-    let vist_url_tracker = UrlVisitTracker::new();
+    let vist_url_tracker = UrlVisitTracker::new().await?;
 
     let feed_url_validator = FeedUrlValidator::new()?;
 
@@ -77,11 +77,11 @@ pub fn extractor_runner(py: Python<'_>, warc_path: &str) -> Result<Vec<u8>> {
         //         // the url is not blog
         //     }
 
-        // if vist_url_tracker.is_url_visited(&url) {
-        //     println!("Visited URL:{}", &url);
+        if vist_url_tracker.is_url_visited(&url).await {
+            println!("Visited URL:{}", &url);
 
-        //     continue;
-        // }
+            continue;
+        }
 
         if feed_url_validator.is_from_feed(&url)? {
             // the url is blog since it came from feeds
@@ -156,13 +156,16 @@ pub fn extractor_runner(py: Python<'_>, warc_path: &str) -> Result<Vec<u8>> {
     Ok(buffer)
 }
 
-fn proccess_and_push<B: BufRead>(
+async fn  proccess_and_push<B: BufRead>(
     record: Record<StreamingBody<'_, B>>,
     blog_to_embed: &mut Vec<QdrantdbObject>,
     url: &str,
 ) -> Result<ControlFlow<()>> {
     let buffered = record.into_buffered()?;
     let body = buffered.body();
+    let mut vist_url_tracker = UrlVisitTracker::new().await?;
+     vist_url_tracker.mark_visited(url).await;
+    
 
     // Extract the actual HTML from the HTTP response
 
