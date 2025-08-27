@@ -4,6 +4,9 @@ use crate::extractors::runner::extractor_runner;
 use crate::models::blog::Blog;
 use crate::models::metadata::ExtractionResult;
 use crate::models::metadata::FieldResult;
+use crate::scylla::quries::UrlStoreProcedures;
+use crate::scylla::quries::create_scylla_table;
+use crate::scylla::quries::{create_or_get_syclla_session, create_scylla_keyspace};
 use crate::utils::analysis::BlogLog;
 use crate::utils::analysis::log_blog_to_csv;
 use crate::utils::find_blog_url::is_blog_url;
@@ -16,9 +19,11 @@ use pyo3::ffi::printfunc;
 use scraper::Selector;
 use warc::WarcHeader;
 use warc::WarcReader;
+
 mod errors;
 mod extractors;
 mod models;
+mod scylla;
 mod utils;
 
 use std::{env, fs};
@@ -36,8 +41,21 @@ pub async fn main() -> Result<()> {
 
     // let result = extractor_runner(&warc_name).await?;
     // println!("fff{:?}", result);
+    // NB: db is automatically closed at end of lifetime
 
+    let scyla_session = create_or_get_syclla_session().await?;
 
+    let key_spcae = create_scylla_keyspace(&scyla_session).await?;
+    let table = create_scylla_table(&scyla_session).await?;
+
+    let url_store_procuedures = UrlStoreProcedures::default();
+    // let store_url_hahs = store_url_hash(&scyla_session, "URL_HAHS_TEST").await?;
+    // let get_urls = url_store_procuedures.get_url_hash(&scyla_session, "URL_HAHS_TEST").await?;
+    // if let Some(url) = get_url_hash(&scyla_session, "URL_HAHS_TEST89").await? {
+    //     println!("Fetched URL:{}", url)
+    // } else {
+    //     println!("Not found");
+    // }
 
     Ok(())
 }

@@ -1,40 +1,43 @@
+use anyhow::Result;
 use blake3::Hasher;
 use bloom::BloomFilter;
 
-use fjall::{Config, Keyspace, Partition, PartitionCreateOptions};
+use crate::scylla::quries::{
+    UrlStoreProcedures, create_or_get_syclla_session, create_scylla_keyspace,
+};
+use scylla::client::session::Session;
 use std::path::Path;
 
-// Persistent storage for visited URLs
+// dedup implementationf for distributed
+#[derive(Debug)]
 struct UrlStore {
-    partition: Partition, // "visited_urls" partition
+    scylla_session: Session,
+    url_store_procedures: UrlStoreProcedures, // "visited_urls" partition ket his be sessin
 }
 
 impl UrlStore {
-    pub fn new(path: &Path) -> Self {
-        let keyspace = Config::new(path)
-            .open()
-            .expect("Failed to open Fjall keyspace");
-
-        let partition = keyspace
-            .open_partition("visited_urls", PartitionCreateOptions::default())
-            .expect("Failed to create psartition");
-
-        Self { partition }
+    pub async fn new() -> Result<Self> {
+        let scylla_session = create_or_get_syclla_session().await?;
+        let url_store_procedures = UrlStoreProcedures::default();
+        Ok(Self {
+            scylla_session,
+            url_store_procedures,
+        })
     }
 }
 
 pub struct UrlVisitTracker {
     pub bloom: BloomFilter, // In-memory filter
-    pub store: UrlStore,    // Disk-backed store
+    pub store: UrlStore,    // Disk-backed store(scyla)
 }
 
 impl UrlVisitTracker {
-    pub fn new() -> Self {
-        Self {
+    pub async fn new() -> Result<Self> {
+        Ok(Self {
             bloom: BloomFilter::with_rate(0.01, 1_000_000_000),
-            // todo :change hardcoded urls 
-            store: UrlStore::new(Path::new("home/natnael/projects/lektos/src/db")),
-        }
+            // todo :change hardcoded urls
+            store: UrlStore::new().await?,
+        })
     }
 
     /// Hash URL to 16-byte array
@@ -48,17 +51,23 @@ impl UrlVisitTracker {
     }
 
     /// Core deduplication logic
-    pub fn is_url_visited(&self, url: &str) -> bool {
+    pub async fn is_url_visited(&self, url: &str) -> bool {
         let hash = Self::hash_url(url);
-        let hash_bytes = &hash[..]; // Slice conversion
+        let hash_bytes = &hash[..];
 
         // Step 1: Bloom filter check
         if !self.bloom.contains(&hash_bytes.to_vec()) {
             return false;
         }
 
-        // Step 2: Fjall disk check
-        match self.store.partition.get(hash_bytes) {
+        // Step 2:  disk check -Scylla
+
+        match self
+            .store
+            .url_store_procedures
+            .get_url_hash(&self.store.scylla_session, url)
+            .await
+        {
             Ok(Some(_)) => true,
             Ok(None) => false,
             Err(_) => false,
@@ -66,7 +75,7 @@ impl UrlVisitTracker {
     }
 
     /// Mark URL as visited
-    pub fn mark_visited(&mut self, url: &str) {
+    pub async fn mark_visited(&mut self, url: &str) {
         let hash = Self::hash_url(url);
         let hash_bytes = &hash[..];
 
@@ -74,8 +83,8 @@ impl UrlVisitTracker {
         self.bloom.insert(&hash_bytes.to_vec());
 
         self.store
-            .partition
-            .insert(hash_bytes, &[])
-            .expect("Fjall write failed");
+            .url_store_procedures
+            .store_url_hash(&self.store.scylla_session, url)
+            .await;
     }
 }

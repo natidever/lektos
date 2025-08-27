@@ -248,6 +248,7 @@ pub fn is_blog_url(url: &str) -> bool {
         "/login",
         "/newsletter",
         "/support",
+        "/home",
     ];
 
     for keyword in &non_blog_keywords {
@@ -257,23 +258,15 @@ pub fn is_blog_url(url: &str) -> bool {
     }
 
     // Accept URLs from well-known blog platforms if they follow known patterns
-    let is_medium = url.contains("medium.com") && url.matches('/').count() >= 4;
-    let is_devto = url.contains("dev.to/") && url.matches('/').count() == 3;
-    let is_substack = url.contains(".substack.com/p/");
-    let is_hashnode = url.contains(".hashnode.dev/") || url.contains(".hashnode.dev/post/");
-    let is_wordpress = url.contains("/20") && url.contains("/") && url.matches('/').count() >= 4; // /2024/07/title
-    let is_blogspot = url.contains(".blogspot.com/") && url.matches('/').count() >= 4;
-    let is_ghost = url.contains("/blog/") && url.matches('/').count() >= 4;
-    let is_custom = url.contains("/posts/") || url.contains("/articles/") || url.contains("/blog/");
+    let is_medium = url.contains("medium.com");
+    let is_devto = url.contains("dev.to/");
+    let is_hashnode = url.contains(".hashnode.dev/");
+    let is_wordpress = url.contains("/20") && url.contains("/"); // /2024/07/title
+    let is_blogspot = url.contains(".blogspot.com/");
+    let is_ghost = url.contains("/blog/");
+    let is_custom = url.contains("/posts/");
 
-    is_medium
-        || is_devto
-        || is_substack
-        || is_hashnode
-        || is_wordpress
-        || is_blogspot
-        || is_ghost
-        || is_custom
+    is_medium || is_devto || is_hashnode || is_wordpress || is_blogspot || is_ghost || is_custom
 }
 
 // Intelegent URL Filtering for blogs how to intellegentlyfilter url that are used for blogs we are int

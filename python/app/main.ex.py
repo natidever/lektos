@@ -118,28 +118,8 @@ def batch_process_warcs(warc_directory, max_workers=8):
 
 
 def main():
-    value = lektos.core_extractor_runner("warc_path")
-
-    buf = io.BytesIO(value)
-    reader = pa.ipc.open_stream(buf)
-    table = reader.read_all()
-
-    # df=table.to_pandas
-    # Second batch after (File batch processign)
-    # Assuming there we areldy got he blogs
-    # CHUNK_SIZE=23
-    # SIZE_OF_CURRENT_TABLE=40
-
-    for table in table.to_batches():
-        table.row()
-
-    # for idx, row in df.iterrows():
-    #         # LET US SAY WE HAVE 23 REOW(MEANIGN 20 BLOG)
-    #         # blog_to_embed.add(row)
-    #         print(row["title"], row["content"])
-    # for i in range(0,len(blog_to_emebd),CHUNK_SIZE):
-    #    emebding= get_emebding(blog)
-    #    qdrant_insert=insert_qdrant(embeding)
-
+    import lektos
+    print(lektos.is_blog("https://medium.com/how-starting-an-investment-firm-almost-landed-me-in-a-federal-prison-652ef7f222a2"))
+    pass
 
 main()
