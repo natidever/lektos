@@ -236,7 +236,7 @@ println!("Successfully created UrlVisitTracker");
 
 Err(e) => {
 
-// If Scylla is not available, that's expected in test environment
+
 
 println!("Scylla not available for testing: {} - expected in CI/test envi", e);
 
@@ -245,3 +245,54 @@ println!("Scylla not available for testing: {} - expected in CI/test envi", e);
 }
 
 }
+
+
+#[test]
+
+fn test_bloom_filter_error_rates() {
+
+// Test different error rates
+
+let strict_bloom = BloomFilter::with_rate(0.001, 10000); // 0.1% error rate
+
+let loose_bloom = BloomFilter::with_rate(0.1, 10000); // 10% error rate
+
+let test_url = "https://example.com";
+
+let hash = UrlVisitTracker::hash_url(test_url);
+
+// Both should initially not contain the hash
+
+assert!(!strict_bloom.contains(&hash.to_vec()));
+
+assert!(!loose_bloom.contains(&hash.to_vec()));
+
+}
+
+
+#[test]
+
+fn test_unicode_url_handling() {
+
+let unicode_urls = vec![
+
+"https://例え.テスト",
+
+"https://пример.испытание",
+
+"https://مثال.اختبار",
+
+"https://example.com/path/with/émojis/🦀",
+
+];
+
+for url in unicode_urls {
+
+let hash = UrlVisitTracker::hash_url(url);
+
+assert_eq!(hash.len(), 16, "Unicode URL should hash to 16 bytes: {}", url);
+
+}
+
+}
+
