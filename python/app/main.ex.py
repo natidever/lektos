@@ -119,7 +119,9 @@ def batch_process_warcs(warc_directory, max_workers=8):
 
 def main():
     import lektos
-    print(lektos.is_blog("https://medium.com/how-starting-an-investment-firm-almost-landed-me-in-a-federal-prison-652ef7f222a2"))
+    print(dir(lektos))
+
+    # print(lektos.is_blog("https://medium.com/how-starting-an-investment-firm-almost-landed-me-in-a-federal-prison-652ef7f222a2"))
     pass
 
 main()
