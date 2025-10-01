@@ -1,6 +1,6 @@
 
 **Lektos** (from the Greek word *λεκτός*) means **"chosen," "selected," or "gathered."**  
-Although it resembles the Greek verb *légo* (λέγω, "to say"), *lektos* comes from a different root — one that emphasizes collection and curation.
+
 
 This reflects the core mission of **Lektos**:
 
